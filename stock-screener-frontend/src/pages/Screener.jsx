@@ -2,6 +2,7 @@ import { useState } from 'react'
 import ScreenerForm from '../components/ScreenerForm'
 import StockTable from '../components/StockTable'
 
+
 function criteriaToString(val) {
   if (!val) return '';
   if (typeof val === 'string') return val;
@@ -11,17 +12,15 @@ function criteriaToString(val) {
 }
 
 const Screener = () => {
-  const [results, setResults] = useState(null)
-  
-  // TO DO -> other design or better criteria ? 
-  const count = results?.count ?? '-'
-  const index = results?.index ?? '-'
+  const [results, setResults] = useState(null);
+  const count = results?.count ?? '-';
+  const index = results?.index ?? '-';
   const criteria = results
     ? [
         criteriaToString(results.fundamental_criteria || results.criteria),
         criteriaToString(results.technical_criteria)
       ].filter(Boolean).join(', ')
-    : '-'
+    : '-';
 
   return (
     <div className="dashboard-container">

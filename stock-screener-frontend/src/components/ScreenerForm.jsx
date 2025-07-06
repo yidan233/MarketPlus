@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { stockApi } from '../services/api'
 import CriteriaBuilder from './CriteriaBuilder'
 
+
 // this component is the form for the stock screener 
 // user can select the index, limit, and criteria 
 const ScreenerForm = ({ onResults }) => {
@@ -66,8 +67,7 @@ const ScreenerForm = ({ onResults }) => {
         setLoading(false)
         return
       }
-      // DEBUG LOGGING 
-      console.log('API RESPONSEE', response)
+      // DEBUG
       onResults(response)
     } catch (err) {
       setError(err.response?.data?.error || 'An error occurred')

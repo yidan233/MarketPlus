@@ -44,7 +44,7 @@ export default function CriteriaBuilder({ type, criteria, setCriteria }) {
   const addRow = () => setCriteria([...criteria, { field: '', operator: '', value: '' }])
   const removeRow = idx => setCriteria(criteria.filter((_, i) => i !== idx))
 
-  // TO DO: return error if a line of criteria is not completed (field, op, value all need to be selected)
+  // TO DO: return error if a line of criteria is not completed (field, op, value all need to be)
   return (
     <div>
       {criteria.map((c, idx) => (
