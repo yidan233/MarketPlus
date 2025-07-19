@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { stockApi } from '../services/api'
 import CriteriaBuilder from './CriteriaBuilder'
+import styles from './ScreenerForm.module.css'
 
 
 // this component is the form for the stock screener 
@@ -67,8 +68,6 @@ const ScreenerForm = ({ onResults }) => {
         setLoading(false)
         return
       }
-      // DEBUG
-      onResults(response)
     } catch (err) {
       setError(err.response?.data?.error || 'An error occurred')
     } finally {
@@ -86,15 +85,15 @@ const ScreenerForm = ({ onResults }) => {
   }
 
   return (
-    <div className="screener-form">
+    <div className={styles["screener-form"]}>
       <h2>Stock Screener</h2>
       
       <form onSubmit={handleSubmit}>
-        <div className="form-section">
+        <div className={styles["form-section"]}>
           <h3>Screen Settings</h3>
           
-          <div className="form-row">
-            <div className="form-group">
+          <div className={styles["form-row"]}>
+            <div className={styles["form-group"]}>
               <label>Index:</label>
               <select 
                 name="index" 
@@ -107,7 +106,7 @@ const ScreenerForm = ({ onResults }) => {
               </select>
             </div>
             
-            <div className="form-group">
+            <div className={styles["form-group"]}>
               <label>Limit:</label>
               <input
                 type="number"
@@ -121,10 +120,10 @@ const ScreenerForm = ({ onResults }) => {
           </div>
         </div>
 
-        <div className="form-section">
+        <div className={styles["form-section"]}>
           <h3>Screening Criteria</h3>
           
-          <div className="form-group">
+          <div className={styles["form-group"]}>
             <label>Fundamental Criteria:</label>
             <CriteriaBuilder
               type="fundamental"
@@ -133,7 +132,7 @@ const ScreenerForm = ({ onResults }) => {
             />
           </div>
           
-          <div className="form-group">
+          <div className={styles["form-group"]}>
             <label>Technical Criteria:</label>
             <CriteriaBuilder
               type="technical"
@@ -143,7 +142,7 @@ const ScreenerForm = ({ onResults }) => {
           </div>
         </div>
 
-        <div className="form-section">
+        <div className={styles["form-section"]}>
           <label>
             <input
               type="checkbox"
@@ -156,7 +155,7 @@ const ScreenerForm = ({ onResults }) => {
         </div>
 
         {error && (
-          <div className="error-message">
+          <div className={styles["error-message"]}>
             {error}
           </div>
         )}
@@ -164,7 +163,7 @@ const ScreenerForm = ({ onResults }) => {
         <button 
           type="submit" 
           disabled={loading}
-          className="submit-button"
+          className={styles["submit-button"]}
         >
           {loading ? 'Screening...' : 'Screen Stocks'}
         </button>

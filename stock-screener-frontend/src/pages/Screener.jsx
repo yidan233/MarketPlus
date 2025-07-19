@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import ScreenerForm from '../components/ScreenerForm'
 import StockTable from '../components/StockTable'
+import styles from './Screener.module.css'
+
 
 
 function criteriaToString(val) {
@@ -23,21 +25,21 @@ const Screener = () => {
     : '-';
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-left">
+    <div className={styles["dashboard-container"]}>
+      <div className={styles["dashboard-left"]}>
         <h1 style={{ marginBottom: '1.5rem' }}>Stock Screener</h1>
-        <div className="dashboard-summary">
-          <div className="summary-card">
+        <div className={styles["dashboard-summary"]}>
+          <div className={styles["summary-card"]}>
             <div>Count</div>
-            <div className="summary-value">{count}</div>
+            <div className={styles["summary-value"]}>{count}</div>
           </div>
-          <div className="summary-card">
+          <div className={styles["summary-card"]}>
             <div>Index</div>
-            <div className="summary-value">{index}</div>
+            <div className={styles["summary-value"]}>{index}</div>
           </div>
-          <div className="summary-card">
+          <div className={styles["summary-card"]}>
             <div>Criteria</div>
-            <div className="summary-value" style={{ fontSize: '1rem', wordBreak: 'break-word' }}>
+            <div className={styles["summary-value"]} style={{ fontSize: '1rem', wordBreak: 'break-word' }}>
               {criteria}
             </div>
           </div>
@@ -46,7 +48,7 @@ const Screener = () => {
           <StockTable stocks={results?.stocks || []} loading={false} />
         </div>
       </div>
-      <div className="dashboard-right">
+      <div className={styles["dashboard-right"]}>
         <ScreenerForm onResults={setResults} />
       </div>
     </div>

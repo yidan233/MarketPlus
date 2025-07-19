@@ -1,5 +1,5 @@
 import { useState } from 'react'
-
+import styles from './CriteriaBuilder.module.css'
 const FUNDAMENTAL_FIELDS = [
   { value: 'market_cap', label: 'Market Cap' },
   { value: 'pe_ratio', label: 'P/E Ratio' },
@@ -48,7 +48,7 @@ export default function CriteriaBuilder({ type, criteria, setCriteria }) {
   return (
     <div>
       {criteria.map((c, idx) => (
-        <div key={idx} className="criteria-row">
+        <div key={idx} className={styles["criteria-row"]}>
     
           <select value={c.field} onChange={e => handleChange(idx, 'field', e.target.value)}>
             <option value="">Field</option>
@@ -73,6 +73,7 @@ export default function CriteriaBuilder({ type, criteria, setCriteria }) {
           ) : (
             <input
               type="text"
+              className={styles["input"]}
               value={c.value}
               onChange={e => handleChange(idx, 'value', e.target.value)}
               placeholder="Value"
@@ -81,7 +82,7 @@ export default function CriteriaBuilder({ type, criteria, setCriteria }) {
           <button type="button" onClick={() => removeRow(idx)}>✕</button>
         </div>
       ))}
-      <button type="button" className="add-criteria-btn" onClick={addRow}>
+      <button type="button" className={styles["add-criteria-btn"]} onClick={addRow}>
         + Add {type} criteria
       </button>
     </div>

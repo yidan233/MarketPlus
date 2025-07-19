@@ -1,0 +1,54 @@
+.criteria-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.criteria-row select,
+.criteria-row input[type="text"] {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1.5px solid #31363b;
+  background: #181c20;;
+  color: #171717;
+  min-width: 110px;
+  flex: 1 1 0;
+}
+
+.criteria-row select:focus,
+.criteria-row input[type="text"]:focus {
+  border-color: #4f8cff;
+  outline: none;
+}
+
+.criteria-row button {
+  background: #151515;
+  border: grey;
+  color: #ef4444;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px 14px;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+  margin-left: 4px;
+}
+
+.criteria-row button:hover {
+  background: #31363b;
+  color: #fff;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea,
+.input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #333;
+  border-radius: 5px;
+  font-size: 14px;
+  background: #181c20;
+  color: #e0e6ef;
+  transition: border-color 0.3s;
+}
