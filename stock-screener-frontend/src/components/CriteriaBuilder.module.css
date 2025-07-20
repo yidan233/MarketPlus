@@ -1,8 +1,21 @@
 .criteria-row {
   display: flex;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 8px; /* Reduce margin for more compact layout */
   align-items: center;
+}
+
+.criteria-container {
+  max-height: 300px; 
+  overflow-y: auto; 
+  padding-right: 8px; 
+  margin-bottom: 15px;
+  scrollbar-width: none; 
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+.criteria-container::-webkit-scrollbar {
+  display: none; 
 }
 
 .criteria-row select,
@@ -11,7 +24,7 @@
   border-radius: 6px;
   border: 1.5px solid #31363b;
   background: #181c20;;
-  color: #171717;
+  color: #ffffff;
   min-width: 110px;
   flex: 1 1 0;
 }

@@ -5,6 +5,7 @@ from app.cli import parse_criteria
 import logging
 from app.data.db_utils import load_from_database
 from app.database import SessionLocal
+from app.data.redis_cache import get_price
 
 
 logging.basicConfig(
@@ -223,6 +224,8 @@ def get_stock_detail(symbol):
         if not stock_data:
             return jsonify({'error': 'Stock not found'}), 404
 
+        # Fetch the latest live price from Redis
+        live_price = get_price(symbol)
         
         historical = []
         if 'historical' in stock_data and hasattr(stock_data['historical'], 'to_dict'):
@@ -231,7 +234,8 @@ def get_stock_detail(symbol):
         return jsonify({
             'info': stock_data.get('info', {}),
             'historical': historical,
-            'last_updated': stock_data.get('last_updated')
+            'last_updated': stock_data.get('last_updated'),
+            'live_price': live_price  # Add live price from Redis
         })
     except Exception as e:
         logger.error(f"Error getting stock detail for {symbol}: {e}")

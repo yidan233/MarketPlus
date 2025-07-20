@@ -2,6 +2,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import logging
 from app.database.models import Stock, HistoricalPrice
+from io import StringIO
 
 # for interacting with database 
 
@@ -108,8 +109,16 @@ def save_to_database(symbol, data, session_factory):
 
         session.query(HistoricalPrice).filter(HistoricalPrice.symbol == symbol).delete()
 
-        if 'historical' in data and not data['historical'].empty:
-            hist_df = data['historical'].reset_index()
+        historical = data.get('historical')
+        # Convert list back to DataFrame if needed
+        if isinstance(historical, str):
+            # Convert JSON string back to DataFrame
+            historical = pd.read_json(StringIO(historical), orient="split")
+        if historical is not None and not historical.empty:
+            # Now you can safely use DataFrame methods
+            hist_df = historical.reset_index()
+            if 'index' in hist_df.columns:
+                hist_df = hist_df.rename(columns={'index': 'Date'})
             prices_to_add = []
             
             for _, row in hist_df.iterrows():

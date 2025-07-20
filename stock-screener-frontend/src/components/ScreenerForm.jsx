@@ -17,7 +17,7 @@ const ScreenerForm = ({ onResults }) => {
     interval: '1d'
   })
   
-  const [loading, setLoading] = useState(false) // whether the API call is in progress 
+  const [loading, setLoading] = useState(false) // whether the API call is in progress -> show loading spinner  
   const [error, setError] = useState(null) // error message 
 
 
@@ -50,12 +50,14 @@ const ScreenerForm = ({ onResults }) => {
           ...formData,
           criteria: fundamental_criteria,
         })
+        onResults(response)  // Add this line
       } else if (!fundamental_criteria && technical_criteria) {
         // Only technical
         response = await stockApi.screenTechnical({
           ...formData,
           criteria: technical_criteria,
         })
+        onResults(response)  // Add this line
       } else if (fundamental_criteria && technical_criteria) {
         // Both: use combined
         response = await stockApi.screenStocks({
@@ -63,6 +65,7 @@ const ScreenerForm = ({ onResults }) => {
           fundamental_criteria,
           technical_criteria,
         })
+        onResults(response)  // Add this line
       } else {
         setError('Please provide at least one screening criteria.')
         setLoading(false)

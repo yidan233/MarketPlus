@@ -1,6 +1,7 @@
 from typing import Dict, Any, Tuple, Optional, List
 import logging
 import operator
+from app.data.redis_cache import get_price
 
 logger = logging.getLogger(__name__)
 
@@ -67,19 +68,23 @@ def apply_criteria(stock_info: Dict[str, Any], criteria: Dict[str, Any]) -> bool
     return True
 
 # NEW TASK: enable sorting based on user input
+# NEW TASK: User could decide what field they want to get 
 def screen_stocks(stock_data: Dict[str, Any], criteria: Dict[str, Any], limit: Optional[int] = None) -> List[Dict[str, Any]]:
     
     results = []
 
     for symbol, data in stock_data.items():
-        info = data.get('info', {})
+        info = data.get('info') or {}
+        # Fetch real-time price from Redis
+        price = get_price(symbol)
+        info['currentPrice'] = price if price is not None else info.get('currentPrice', 0)
         if apply_criteria(info, criteria):
             results.append({
                 'symbol': symbol,
                 'name': info.get('shortName', 'Unknown'),
                 'sector': info.get('sector', 'Unknown'),
                 'market_cap': info.get('marketCap', 0),
-                'price': info.get('currentPrice', 0),
+                'price': info['currentPrice'],
                 'pe_ratio': info.get('trailingPE', 0)
             })
 

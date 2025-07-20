@@ -3,44 +3,66 @@ import yfinance as yf
 import logging
 import time
 from datetime import datetime
+from app.data.redis_cache import get_stock_data, set_stock_data
+import copy 
+import threading
 
 logger = logging.getLogger(__name__)
 
 # use yfinance to fetech data info 
 # default: period = 1 year, interval = 1d 
-def fetch_yfinance_data(symbols, period="1y", interval="1d", reload=False, load_from_db=None, save_to_db=None):
+def refresh_cache_async(symbols, period, interval, save_to_db):
+    # This function runs in a background thread
+    fresh_data = _fetch_fresh_data(symbols, period, interval)
+    for symbol, data in fresh_data.items():
+        if save_to_db:
+            save_to_db(symbol, data)
+        set_stock_data(symbol, data)
 
+def fetch_yfinance_data(symbols, period="1y", interval="1d", reload=False, load_from_db=None, save_to_db=None):
     result = {}
     symbols_to_fetch = []
 
     if isinstance(symbols, str):
         symbols = [symbols]
 
-    # if reload == True, I will need to fetch the fresh stock symbol 
-    if reload:
-        symbols_to_fetch = symbols
+    for symbol in symbols:
+        if reload:
+            # User explicitly wants fresh data - BLOCK and wait
+            symbols_to_fetch.append(symbol)
+            continue
 
-    else:
-        for symbol in symbols:
-            # could find the symbol from the cache -> load and add to result 
-            cached_data = load_from_db(symbol) if load_from_db else None
-            if cached_data:
-                result[symbol] = cached_data
-            # couldnt? -> fetch !
-            else:
-                symbols_to_fetch.append(symbol)
-    
+        # 1. Try Redis cache
+        cached_data = get_stock_data(symbol)
+        if cached_data:
+            result[symbol] = cached_data
+            continue
+
+        # 2. Redis cache failed? Try DB cache
+        db_data = load_from_db(symbol) if load_from_db else None
+        if db_data:
+            result[symbol] = db_data
+            # Cache expired but we have DB data - refresh in background
+            threading.Thread(
+                target=refresh_cache_async,
+                args=([symbol], period, interval, save_to_db),
+                daemon=True
+            ).start()
+            continue
+
+        # 3. No cache or DB data - BLOCK and fetch (user needs data)
+        symbols_to_fetch.append(symbol)
+
+    # Fetch fresh data for symbols that need it (blocking)
     if symbols_to_fetch:
-        logger.info(f"Fetching fresh data for {len(symbols_to_fetch)} symbols: {symbols_to_fetch}")
         fresh_data = _fetch_fresh_data(symbols_to_fetch, period, interval)
         for symbol, data in fresh_data.items():
             if data:
-                if 'historical' in data and isinstance(data['historical'], pd.DataFrame):
-                    if not isinstance(data['historical'].index, pd.DatetimeIndex):
-                        data['historical'].index = pd.to_datetime(data['historical'].index)
-                    result[symbol] = data
-                    if save_to_db:
-                        save_to_db(symbol, data)
+                result[symbol] = data
+                if save_to_db:
+                    save_to_db(symbol, data)
+                set_stock_data(symbol, data)
+
     return result
 
 def _fetch_fresh_data(symbols, period="1y", interval="1d"):

@@ -3,6 +3,7 @@ import logging
 import operator
 import pandas as pd
 import numpy as np
+from app.data.redis_cache import get_price
 
 logger = logging.getLogger(__name__)
 
@@ -152,11 +153,12 @@ def screen_by_technical(stock_data: Dict[str, Any], indicators, criteria: Dict[s
 
         if meets_criteria:
             info = data.get('info', {})
+            price = get_price(symbol)
             results.append({
                 'symbol': symbol,
                 'name': info.get('shortName', 'Unknown'),
                 'sector': info.get('sector', 'Unknown'),
-                'price': hist['Close'].iloc[-1],
+                'price': price,
                 'market_cap': info.get('marketCap'),
                 'pe_ratio': info.get('trailingPE')
             })

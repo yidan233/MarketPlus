@@ -4,6 +4,13 @@ import { useNavigate } from 'react-router-dom';
 const StockTable = ({ stocks, loading }) => {
   const navigate = useNavigate();
 
+  const handleViewStock = (symbol) => {
+    // Open in new page using window.open with full URL
+    const currentUrl = window.location.origin;
+    const stockUrl = `${currentUrl}/stock/${symbol}`;
+    window.open(stockUrl, '_blank');
+  };
+
   if (loading) {
     return (
       <div className="stock-table">
@@ -58,7 +65,7 @@ const StockTable = ({ stocks, loading }) => {
                 <td className="actions">
                   <button
                     className="view-btn"
-                    onClick={() => navigate(`/stock/${stock.symbol}`)}
+                    onClick={() => handleViewStock(stock.symbol)}
                   >
                     View
                   </button>

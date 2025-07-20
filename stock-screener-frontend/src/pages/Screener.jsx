@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import ScreenerForm from '../components/ScreenerForm'
 import StockTable from '../components/StockTable'
 import styles from './Screener.module.css'
-
-
 
 function criteriaToString(val) {
   if (!val) return '';
@@ -14,7 +13,53 @@ function criteriaToString(val) {
 }
 
 const Screener = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [results, setResults] = useState(null);
+  const [formState, setFormState] = useState({
+    index: 'sp500',
+    limit: 20,
+    fundamental_criteria: [{ field: '', operator: '', value: '' }],
+    technical_criteria: [{ field: '', operator: '', value: '' }],
+    reload: false,
+    period: '1y',
+    interval: '1d'
+  });
+  
+  // Load both results and form state from URL on component mount
+  useEffect(() => {
+    const resultsParam = searchParams.get('results');
+    const formStateParam = searchParams.get('formState');
+    
+    if (resultsParam) {
+      try {
+        const parsedResults = JSON.parse(decodeURIComponent(resultsParam));
+        setResults(parsedResults);
+      } catch (e) {
+        console.error('Failed to parse results from URL:', e);
+      }
+    }
+    
+    if (formStateParam) {
+      try {
+        const parsedFormState = JSON.parse(decodeURIComponent(formStateParam));
+        setFormState(parsedFormState);
+      } catch (e) {
+        console.error('Failed to parse form state from URL:', e);
+      }
+    }
+  }, [searchParams]);
+
+  // Save results to URL whenever they change
+  const handleResultsChange = (newResults) => {
+    setResults(newResults);
+    if (newResults) {
+      const resultsString = encodeURIComponent(JSON.stringify(newResults));
+      setSearchParams({ results: resultsString });
+    } else {
+      setSearchParams({});
+    }
+  };
+
   const count = results?.count ?? '-';
   const index = results?.index ?? '-';
   const criteria = results
@@ -49,7 +94,7 @@ const Screener = () => {
         </div>
       </div>
       <div className={styles["dashboard-right"]}>
-        <ScreenerForm onResults={setResults} />
+        <ScreenerForm onResults={handleResultsChange} />
       </div>
     </div>
   )

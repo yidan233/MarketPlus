@@ -217,7 +217,7 @@ Examples:
     
     try:
       
-        screener = StockScreener()
+        screener = StockScreener() #change to false when testing 
         
        
         logger.info(f"Getting symbols from {args.index}")

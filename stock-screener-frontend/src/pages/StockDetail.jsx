@@ -37,7 +37,7 @@ const StockInfo = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => window.close()}
           style={{
             background: '#232a34',
             color: '#4f8cff',

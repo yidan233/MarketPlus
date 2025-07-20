@@ -14,6 +14,17 @@ from .combined import create_combined_screen
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
+def setup_initial_database_load(indexes=("dow30","sp500", "nasdaq100")):
+    for index in indexes:
+        symbols = get_stock_symbols(index=index)
+        print(f"Fetching and saving data for {len(symbols)} symbols in {index}...")
+        data = fetch_yfinance_data(symbols)
+    
+        for symbol, stock_data in data.items():
+            save_to_database(symbol, stock_data, SessionLocal)
+    
+    print("✅ Initial database load complete.")
+
 class StockScreener:
 
     # for comparison operators ('>', 20) 
@@ -26,9 +37,11 @@ class StockScreener:
         '!=': operator.ne
     }
     
-    def __init__(self):
+    def __init__(self, auto_setup_db=False):
         self.indicators = TechnicalIndicators()
         self.stock_data = {} # will hold all loaded stock data for display 
+        if auto_setup_db:
+            setup_initial_database_load()
 
     def load_data(self, symbols=None, reload=False, period="1y", interval="1d"):
         if symbols is None:

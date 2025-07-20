@@ -1,6 +1,7 @@
 .screener-form {
   background: #232a34;
   color: #e0e6ef;
+  padding-bottom: 2rem; /* Add bottom padding for scroll space */
 }
 
 .screener-form h2 {
