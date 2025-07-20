@@ -1,11 +1,11 @@
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import styles from './StockTable.module.css';
 
-// display the result in a table 
 const StockTable = ({ stocks, loading }) => {
-  const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const stocksPerPage = 20; // Show 20 stocks per page
 
   const handleViewStock = (symbol) => {
-    // Open in new page using window.open with full URL
     const currentUrl = window.location.origin;
     const stockUrl = `${currentUrl}/stock/${symbol}`;
     window.open(stockUrl, '_blank');
@@ -31,11 +31,64 @@ const StockTable = ({ stocks, loading }) => {
     )
   }
 
+  // Calculate pagination
+  const totalPages = Math.ceil(stocks.length / stocksPerPage);
+  const startIndex = (currentPage - 1) * stocksPerPage;
+  const endIndex = startIndex + stocksPerPage;
+  const currentStocks = stocks.slice(startIndex, endIndex);
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
   return (
     <div className="stock-table">
-      <h3 className="stock-table-title">Results: ({stocks.length} stocks found)</h3>
+      <h3 className="stock-table-title">
+        Results: {stocks.length} stocks found (Page {currentPage} of {totalPages})
+      </h3>
       
-      <div className="stock-table-scroll">
+      {/* Pagination Controls - At top */}
+      {totalPages > 1 && (
+        <div className={styles.paginationControls}>
+          <button
+            onClick={goToPreviousPage}
+            disabled={currentPage === 1}
+            className={`${styles.paginationButton} ${
+              currentPage === 1 
+                ? styles.paginationButtonDisabled 
+                : styles.paginationButtonEnabled
+            }`}
+          >
+            ← Previous
+          </button>
+          
+          <span className={styles.pageInfo}>
+            Page {currentPage} of {totalPages}
+          </span>
+          
+          <button
+            onClick={goToNextPage}
+            disabled={currentPage === totalPages}
+            className={`${styles.paginationButton} ${
+              currentPage === totalPages 
+                ? styles.paginationButtonDisabled 
+                : styles.paginationButtonEnabled
+            }`}
+          >
+            Next →
+          </button>
+        </div>
+      )}
+      
+      <div className={`stock-table-scroll ${styles['stock-table-scroll']}`}>
         <table>
           <thead>
             <tr>
@@ -48,7 +101,7 @@ const StockTable = ({ stocks, loading }) => {
             </tr>
           </thead>
           <tbody>
-            {stocks.map((stock) => (
+            {currentStocks.map((stock) => (
               <tr key={stock.symbol}>
                 <td className="symbol">{stock.symbol}</td>
                 <td className="price">${stock.price?.toFixed(2) || 'N/A'}</td>

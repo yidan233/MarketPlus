@@ -70,6 +70,9 @@ Pipfile.lock
 # Environment variables
 .env
 
+# Configuration files with sensitive data
+config.py
+
 # Ignore all __pycache__ folders recursively
 **/__pycache__/
 **/*.pyc

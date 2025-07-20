@@ -40,26 +40,33 @@
   overflow-x: hidden; 
 }
 
+/* Centered Summary Cards */
 .dashboard-summary {
   display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1rem;
   gap: 1rem;
-  margin-bottom: 2rem;
 }
 
 .summary-card {
   background: #181c20;
-  border-radius: 1rem;
-  padding: 1rem 2rem;
-  text-align: center;
-  min-width: 100px;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1.5rem;
   color: #e0e6ef;
   box-shadow: 0 1px 4px rgba(0,0,0,0.10);
   border: 1px solid #232a34;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 120px;
 }
 
 .summary-value {
-  font-size: 2rem;
-  font-weight: bold;
-  margin-top: 0.5rem;
+  font-size: 16px;
+  font-weight: 700;
   color: #4f8cff;
+  letter-spacing: 0.5px;
 }

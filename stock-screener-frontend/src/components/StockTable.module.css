@@ -1,0 +1,116 @@
+.paginationControls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+  margin-bottom: 8px;
+  padding: 5px 12px;
+  background-color: #1e1e2f;
+  border-radius: 4px;
+  border: 1px solid #444;
+}
+
+.paginationButton {
+  padding: 6px 12px;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  min-width: 60px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.paginationButtonEnabled {
+  background: #00a8ff;
+  box-shadow: 0 1px 3px rgba(0, 168, 255, 0.3);
+}
+
+.paginationButtonEnabled:hover {
+  background: #0097e6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 168, 255, 0.4);
+}
+
+.paginationButtonDisabled {
+  background: #444;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pageInfo {
+  color: #ccc;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  background-color: #2a2a3d;
+  border-radius: 3px;
+  border: 1px solid #555;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex: 1;
+  text-align: center;
+}
+
+.tableContainer {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background-color: #1a1a2e;
+}
+
+.tableContainer table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+  color: #e0e0e0;
+}
+
+.tableContainer thead {
+  position: sticky;
+  top: 0;
+  background-color: #292942;
+  z-index: 10;
+}
+
+.tableContainer th {
+  padding: 8px 6px;
+  text-align: left;
+  font-weight: 600;
+  color: #ddd;
+  border-bottom: 2px solid #444;
+  font-size: 13px;
+}
+
+.tableContainer td {
+  padding: 6px 6px;
+  border-bottom: 1px solid #333;
+  color: #ccc;
+  font-size: 13px;
+}
+
+.tableContainer tbody tr:hover {
+  background-color: #2f2f4d;
+}
+
+.tableContainer tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.stock-table {
+  background-color: #303031;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.stock-table-title {
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: #eee;
+}

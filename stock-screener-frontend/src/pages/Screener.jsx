@@ -7,17 +7,28 @@ import styles from './Screener.module.css'
 function criteriaToString(val) {
   if (!val) return '';
   if (typeof val === 'string') return val;
-  if (Array.isArray(val)) return val.join(', ');
+  if (Array.isArray(val)) return JSON.stringify(val);
   if (typeof val === 'object') return JSON.stringify(val);
   return String(val);
 }
+
+// Simple hash function
+const generateHash = (data) => {
+  const str = JSON.stringify(data);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash).toString(36); // Convert to base36 for shorter strings
+};
 
 const Screener = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [results, setResults] = useState(null);
   const [formState, setFormState] = useState({
     index: 'sp500',
-    limit: 20,
     fundamental_criteria: [{ field: '', operator: '', value: '' }],
     technical_criteria: [{ field: '', operator: '', value: '' }],
     reload: false,
@@ -25,76 +36,93 @@ const Screener = () => {
     interval: '1d'
   });
   
-  // Load both results and form state from URL on component mount
+  // Load state from hash on component mount
   useEffect(() => {
-    const resultsParam = searchParams.get('results');
-    const formStateParam = searchParams.get('formState');
+    const resultsHash = searchParams.get('r'); // 'r' for results
+    const formHash = searchParams.get('f');    // 'f' for form
     
-    if (resultsParam) {
-      try {
-        const parsedResults = JSON.parse(decodeURIComponent(resultsParam));
-        setResults(parsedResults);
-      } catch (e) {
-        console.error('Failed to parse results from URL:', e);
+    if (resultsHash) {
+      const storedResults = localStorage.getItem(`results_${resultsHash}`);
+      if (storedResults) {
+        setResults(JSON.parse(storedResults));
       }
     }
     
-    if (formStateParam) {
-      try {
-        const parsedFormState = JSON.parse(decodeURIComponent(formStateParam));
-        setFormState(parsedFormState);
-      } catch (e) {
-        console.error('Failed to parse form state from URL:', e);
+    if (formHash) {
+      const storedFormState = localStorage.getItem(`form_${formHash}`);
+      if (storedFormState) {
+        setFormState(JSON.parse(storedFormState));
       }
     }
   }, [searchParams]);
 
-  // Save results to URL whenever they change
+  // Save results with hash
   const handleResultsChange = (newResults) => {
     setResults(newResults);
+    
     if (newResults) {
-      const resultsString = encodeURIComponent(JSON.stringify(newResults));
-      setSearchParams({ results: resultsString });
+      const resultsHash = generateHash(newResults);
+      localStorage.setItem(`results_${resultsHash}`, JSON.stringify(newResults));
+      
+      // Store only the hash in URL
+      setSearchParams(prev => ({
+        ...prev,
+        r: resultsHash
+      }));
     } else {
-      setSearchParams({});
+      setSearchParams(prev => {
+        const newParams = { ...prev };
+        delete newParams.r;
+        return newParams;
+      });
     }
+  };
+
+  // Save form state with hash
+  const handleFormStateChange = (newFormState) => {
+    setFormState(newFormState);
+    
+    const formHash = generateHash(newFormState);
+    localStorage.setItem(`form_${formHash}`, JSON.stringify(newFormState));
+    
+    // Store only the hash in URL
+    setSearchParams(prev => ({
+      ...prev,
+      f: formHash
+    }));
   };
 
   const count = results?.count ?? '-';
   const index = results?.index ?? '-';
-  const criteria = results
-    ? [
-        criteriaToString(results.fundamental_criteria || results.criteria),
-        criteriaToString(results.technical_criteria)
-      ].filter(Boolean).join(', ')
-    : '-';
 
   return (
     <div className={styles["dashboard-container"]}>
       <div className={styles["dashboard-left"]}>
-        <h1 style={{ marginBottom: '1.5rem' }}>Stock Screener</h1>
-        <div className={styles["dashboard-summary"]}>
+        <h1 style={{ marginBottom: '1rem' }}>Stock Screener</h1>
+        
+        {/* Inline Summary Cards */}
+        <div className={styles["dashboard-summary"]} style={{ marginBottom: '1rem' }}>
           <div className={styles["summary-card"]}>
-            <div>Count</div>
-            <div className={styles["summary-value"]}>{count}</div>
+            <span>Total: </span>
+            <span className={styles["summary-value"]}>{count}</span>
           </div>
           <div className={styles["summary-card"]}>
-            <div>Index</div>
-            <div className={styles["summary-value"]}>{index}</div>
-          </div>
-          <div className={styles["summary-card"]}>
-            <div>Criteria</div>
-            <div className={styles["summary-value"]} style={{ fontSize: '1rem', wordBreak: 'break-word' }}>
-              {criteria}
-            </div>
+            <span>Index: </span>
+            <span className={styles["summary-value"]}>{index}</span>
           </div>
         </div>
-        <div style={{ marginTop: '2rem' }}>
+        
+        {/* Stock Table with more space */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <StockTable stocks={results?.stocks || []} loading={false} />
         </div>
       </div>
       <div className={styles["dashboard-right"]}>
-        <ScreenerForm onResults={handleResultsChange} />
+        <ScreenerForm 
+          onResults={handleResultsChange}
+          onFormStateChange={handleFormStateChange}
+          initialFormState={formState}
+        />
       </div>
     </div>
   )

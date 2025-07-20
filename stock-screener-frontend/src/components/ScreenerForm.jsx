@@ -9,7 +9,7 @@ import styles from './ScreenerForm.module.css'
 const ScreenerForm = ({ onResults }) => {
   const [formData, setFormData] = useState({
     index: 'sp500',
-    limit: 20,
+    limit: 1000, // Set high limit to get all results
     fundamental_criteria: '',
     technical_criteria: '',
     reload: false,
@@ -89,11 +89,11 @@ const ScreenerForm = ({ onResults }) => {
 
   return (
     <div className={styles["screener-form"]}>
-      <h2>Stock Screener</h2>
+      <h2>Set your Filters</h2>
       
       <form onSubmit={handleSubmit}>
         <div className={styles["form-section"]}>
-          <h3>Screen Settings</h3>
+          <h3>Stock Index</h3>
           
           <div className={styles["form-row"]}>
             <div className={styles["form-group"]}>
@@ -107,18 +107,6 @@ const ScreenerForm = ({ onResults }) => {
                 <option value="nasdaq100">NASDAQ 100</option>
                 <option value="dow30">Dow Jones 30</option>
               </select>
-            </div>
-            
-            <div className={styles["form-group"]}>
-              <label>Limit:</label>
-              <input
-                type="number"
-                name="limit"
-                value={formData.limit}
-                onChange={handleInputChange}
-                min="1"
-                max="100"
-              />
             </div>
           </div>
         </div>

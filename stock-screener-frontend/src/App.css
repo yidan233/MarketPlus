@@ -36,9 +36,7 @@ body {
   font-size: 1.1rem;
 }
 
-
-
-/* Table styles */
+/* Table styles - Dark theme */
 .stock-table {
   background: #232627;
   border-radius: 1rem;
@@ -46,25 +44,20 @@ body {
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  height: 100%; /* or a fixed height if you want */
+  height: 100%;
 }
 
 .stock-table-title {
   font-size: 1.2rem;
   font-weight: bold;
-  color: #0d0d0d;
+  color: #e0e6ef;
   margin-bottom: 0.5rem;
-  /* Sticky title */
-  position: sticky;
-  top: 0;
-  background: #f0f1f3;
-  z-index: 2;
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
 }
 
 .stock-table-scroll {
-  max-height: 400px; /* or whatever you want */
+  max-height: 400px;
   overflow-y: auto;
   overflow-x: auto;
 }
@@ -85,16 +78,17 @@ body {
 
 .stock-table td {
   padding: 12px;
-  border-bottom: 1px solid #ecf0f1;
+  border-bottom: 1px solid #31363b;
+  color: #e0e6ef;
 }
 
 .stock-table tr:hover {
-  background: #f8f9fa;
+  background: #2a3238;
 }
 
 .symbol {
   font-weight: 600;
-  color: #2c3e50;
+  color: #e0e6ef;
 }
 
 .price {
@@ -111,7 +105,7 @@ body {
 }
 
 .sector {
-  color: #7f8c8d;
+  color: #b0b4b9;
 }
 
 .view-btn {
@@ -133,7 +127,7 @@ body {
 .no-results {
   text-align: center;
   padding: 40px;
-  color: #7f8c8d;
+  color: #b0b4b9;
   font-size: 1.1rem;
 }
 
@@ -170,33 +164,32 @@ html, body, #root {
   width: 100%;
   margin: 0;
   padding: 0;
-  background: #f4f4f6;
+  background: #181c20;
 }
-
 
 .screener-form h2,
 .screener-form h3,
 .dashboard-left h1 {
-  color: #222;
+  color: #e0e6ef;
 }
 
 .screener-form input,
 .screener-form select,
 .screener-form textarea {
-  background: #f4f4f6;
-  border: 1.5px solid #e0e0e0;
-  color: #222;
+  background: #232a34;
+  border: 1.5px solid #444;
+  color: #e0e6ef;
 }
 
 .screener-form input:focus,
 .screener-form select:focus,
 .screener-form textarea:focus {
-  border-color: #6c63ff;
+  border-color: #4f8cff;
   outline: none;
 }
 
 .submit-button {
-  background: #202020;
+  background: #4f8cff;
   color: #fff;
   border: none;
   padding: 12px 30px;
@@ -209,28 +202,12 @@ html, body, #root {
 }
 
 .submit-button:hover {
-  background: #574fd6;
-}
-
-.stock-table {
-  background: #f9f9fb;
-  border-radius: 1rem;
-  box-shadow: 0 1px 4px rgba(60,60,60,0.04);
-  padding: 1.5rem;
-}
-
-.stock-table th {
-  background: #f0f1f3;
-  color: #444;
-}
-
-.stock-table td {
-  color: #333;
+  background: #3a7ce8;
 }
 
 .loading,
 .no-results {
-  color: #888;
-  background: #f0f1f3;
+  color: #b0b4b9;
+  background: #232a34;
   border-radius: 1rem;
 }

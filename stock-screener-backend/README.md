@@ -1,18 +1,20 @@
 # Stock Screener Backend
 
-A modular Python stock screener backend with fundamental and technical analysis capabilities, featuring CLI and REST API interfaces.
+A modular Python stock screener backend with fundamental and technical analysis capabilities, featuring CLI and REST API interfaces with user authentication.
 
 ---
 
 ## Features
 
 - **Multi-Modal Interface**: CLI and REST API support
+- **User Authentication**: Secure login, registration, and profile management
 - **Comprehensive Screening**: Fundamental, technical, and combined screening
 - **Multiple Indices**: S&P 500, NASDAQ 100, and Dow 30 support
 - **Technical Indicators**: RSI, Moving Averages, MACD, Bollinger Bands, ATR, OBV, Stochastic, ROC
 - **Database Integration**: SQLite with caching and backup/restore capabilities
 - **Flexible Output**: Console, JSON, and CSV formats
 - **Data Sources**: Yahoo Finance (yfinance) integration
+- **User Watchlists**: Personalized stock watchlists (coming soon)
 
 ---
 
@@ -45,10 +47,10 @@ venv\Scripts\activate
 pip install --upgrade pip
 
 # Install requirements
-pip install -r requirements.txt
+pip install -r ../requirements.txt
 ```
 
-### 4. **Set Up Database** (Optional)
+### 4. **Set Up Database**
 
 The application will automatically create the database on first run, but you can manually set it up:
 
@@ -112,7 +114,53 @@ python -m app.main --mode api
 
 The API will be available at `http://localhost:5000`
 
-#### **API Endpoints**
+#### **Authentication Endpoints**
+
+**User Registration**
+```bash
+curl -X POST http://localhost:5000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "securepassword"
+  }'
+```
+
+**User Login**
+```bash
+curl -X POST http://localhost:5000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "password": "securepassword"
+  }'
+```
+
+**Get User Profile**
+```bash
+curl http://localhost:5000/api/v1/auth/profile \
+  -H "Cookie: session=your-session-cookie"
+```
+
+**Update User Profile**
+```bash
+curl -X PUT http://localhost:5000/api/v1/auth/profile \
+  -H "Content-Type: application/json" \
+  -H "Cookie: session=your-session-cookie" \
+  -d '{
+    "email": "newemail@example.com",
+    "password": "newpassword"
+  }'
+```
+
+**User Logout**
+```bash
+curl -X POST http://localhost:5000/api/v1/auth/logout \
+  -H "Cookie: session=your-session-cookie"
+```
+
+#### **Stock Screening Endpoints**
 
 **Get Available Indexes**
 ```bash
@@ -158,6 +206,11 @@ curl -X POST http://localhost:5000/api/v1/screen/combined \
   }'
 ```
 
+**Get Stock Details**
+```bash
+curl http://localhost:5000/api/v1/stock/AAPL
+```
+
 **Get Available Indicators**
 ```bash
 curl http://localhost:5000/api/v1/indicators
@@ -174,6 +227,18 @@ curl http://localhost:5000/api/v1/indicators
 - `price_to_book`: Price-to-book ratio
 - `price_to_sales`: Price-to-sales ratio
 - `dividend_yield`: Dividend yield
+- `payout_ratio`: Dividend payout ratio
+- `return_on_equity`: Return on equity
+- `return_on_assets`: Return on assets
+- `profit_margin`: Profit margin
+- `operating_margin`: Operating margin
+- `revenue_growth`: Revenue growth
+- `earnings_growth`: Earnings growth
+- `beta`: Beta coefficient
+- `current_ratio`: Current ratio
+- `debt_to_equity`: Debt-to-equity ratio
+- `enterprise_to_revenue`: Enterprise value to revenue
+- `enterprise_to_ebitda`: Enterprise value to EBITDA
 - `sector`: Industry sector (exact match)
 - `industry`: Industry (exact match)
 - `country`: Country (exact match)
@@ -248,44 +313,41 @@ python -m pytest tests/test_screener.py
 ### **Code Structure**
 - **Modular Design**: Each component is in its own module
 - **Separation of Concerns**: Data fetching, screening, and API are separate
-- **Extensible**: Easy to add new indicators or data sources
-- **Database Integration**: SQLite with caching for performance
+- **Authentication**: User management with Flask-Login
+- **Database**: SQLAlchemy models for user data
+
+### **Project Structure**
+```
+stock-screener-backend/
+├── app/
+│   ├── __init__.py
+│   ├── auth/           # Authentication routes and logic
+│   ├── api/            # API routes
+│   ├── models/         # Database models (User, etc.)
+│   ├── screener/       # Screening logic
+│   ├── data/           # Data fetching and caching
+│   └── database.py     # Database configuration
+├── tests/              # Test files
+├── venv/               # Virtual environment
+└── README.md
+```
 
 ---
 
-## Configuration
+## Security Notes
 
-Key configuration options in `app/config.py`:
-- Database settings
-- API keys (if needed)
-- Default parameters
-
----
-
-## Troubleshooting
-
-### **Common Issues**
-
-1. **Import Errors**: Make sure you're in the virtual environment
-2. **Database Errors**: Run database setup manually
-3. **API Connection Issues**: Check if the server is running on port 5000
-4. **Data Fetching Issues**: Check internet connection and Yahoo Finance availability
-
-### **Logs**
-The application uses Python logging. Check console output for error messages.
+- **Password Hashing**: All passwords are hashed using Werkzeug's security functions
+- **Session Management**: Flask-Login handles secure session management
+- **Input Validation**: All user inputs are validated and sanitized
+- **SQL Injection Protection**: SQLAlchemy provides protection against SQL injection
 
 ---
 
-## License
+## Future Features
 
-[Your License Here]
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+- [ ] User watchlists with personalized stock tracking
+- [ ] Email notifications for price alerts
+- [ ] Advanced charting and technical analysis
+- [ ] Portfolio tracking and performance analysis
+- [ ] Social features (sharing screens, following other users)
+- [ ] API rate limiting and usage tracking 
