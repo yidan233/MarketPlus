@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { stockApi } from '../services/api'
-import PriceChart from '../components/PriceChart'
+import PriceChart from '../components/charts/PriceChart'
 import styles from './StockDetail.module.css'
 
 const StockInfo = () => {
@@ -11,6 +11,7 @@ const StockInfo = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [selectedChart, setSelectedChart] = useState('price')
+  const [selectedCategory, setSelectedCategory] = useState(0); // default to the first
 
   useEffect(() => {
     setLoading(true)
@@ -24,7 +25,70 @@ const StockInfo = () => {
   if (error) return <div>Error: {error}</div>
   if (!data) return <div>No data found.</div>
 
-  const { info, historical } = data
+  const { info } = data
+
+  // Define metric categories and their fields 
+  // show important metrics 
+  const metricCategories = [
+    {
+      title: 'Valuation Metrics',
+      fields: [
+        { key: 'marketCap', label: 'Market Cap' },
+        { key: 'trailingPE', label: 'P/E Ratio (TTM)' },
+        { key: 'forwardPE', label: 'Forward P/E' },
+        { key: 'priceToBook', label: 'Price-to-Book' },
+        { key: 'enterpriseValue', label: 'Enterprise Value' },
+        { key: 'enterpriseToEbitda', label: 'EV/EBITDA' },
+        { key: 'pegRatio', label: 'PEG Ratio' },
+      ]
+    },
+    {
+      title: 'Profitability',
+      fields: [
+        { key: 'profitMargins', label: 'Net Profit Margin' },
+        { key: 'operatingMargins', label: 'Operating Margin' },
+        { key: 'returnOnAssets', label: 'Return on Assets' },
+        { key: 'returnOnEquity', label: 'Return on Equity' },
+        { key: 'grossMargins', label: 'Gross Margin' },
+      ]
+    },
+    {
+      title: 'Growth Metrics',
+      fields: [
+        { key: 'revenueGrowth', label: 'Revenue Growth (YoY)' },
+        { key: 'earningsGrowth', label: 'Earnings Growth (YoY)' },
+        { key: 'ebitdaMargins', label: 'EBITDA Margin' },
+      ]
+    },
+    {
+      title: 'Dividends',
+      fields: [
+        { key: 'dividendYield', label: 'Dividend Yield' },
+        { key: 'payoutRatio', label: 'Payout Ratio' },
+        { key: 'dividendRate', label: 'Dividend Rate' },
+      ]
+    },
+    {
+      title: 'Balance Sheet Health',
+      fields: [
+        { key: 'debtToEquity', label: 'Debt to Equity' },
+        { key: 'currentRatio', label: 'Current Ratio' },
+        { key: 'quickRatio', label: 'Quick Ratio' },
+      ]
+    },
+    {
+      title: 'Stock Basics',
+      fields: [
+        { key: 'beta', label: 'Beta' },
+        { key: 'volume', label: 'Volume' },
+        { key: 'averageVolume', label: 'Avg Volume (3M)' },
+        { key: 'fiftyTwoWeekHigh', label: '52-Week High' },
+        { key: 'fiftyTwoWeekLow', label: '52-Week Low' },
+        { key: 'previousClose', label: 'Previous Close' },
+        { key: 'open', label: 'Open' },
+      ]
+    },
+  ];
 
   // Placeholder for financials chart/component
   const FinancialsChart = () => (
@@ -38,21 +102,11 @@ const StockInfo = () => {
       <div className={styles.header}>
         <button
           onClick={() => window.close()}
-          style={{
-            background: '#232a34',
-            color: '#4f8cff',
-            border: 'none',
-            borderRadius: '6px',
-            padding: '8px 18px',
-            fontWeight: 600,
-            fontSize: '1rem',
-            cursor: 'pointer',
-            marginBottom: '1rem',
-            marginRight: '1.5rem'
-          }}
+          className={styles.backButton}
         >
           ← Back to Screener
         </button>
+        {/* company title */}
         <h1 className={styles.title}>
           {info.shortName} <span style={{ color: '#7fa7ff' }}>({info.symbol})</span>
         </h1>
@@ -76,47 +130,62 @@ const StockInfo = () => {
         {/* Right: Metrics and Chart */}
         <div className={styles.rightCol}>
           <div className={styles.sectionTitle}>Key Metrics</div>
-          <table className={styles.metricsTable}>
-            <tbody>
-              <tr>
-                <td>Market Cap</td>
-                <td>{info.marketCap || 'N/A'}</td>
-              </tr>
-              <tr>
-                <td>P/E Ratio</td>
-                <td>{info.peRatio || info.trailingPE || 'N/A'}</td>
-              </tr>
-              <tr>
-                <td>Dividend Yield</td>
-                <td>{info.dividendYield || 'N/A'}</td>
-              </tr>
-              <tr>
-                <td>Beta</td>
-                <td>{info.beta || 'N/A'}</td>
-              </tr>
-            </tbody>
-          </table>
-          <div className={styles.sectionTitle} style={{ marginTop: '2rem' }}>
+          <div className={styles.metricsTabs}>
+            {/* buttons , when clicked, call setSelectedCategory*/}
+            {metricCategories.map((category, idx) => (
+              <button
+                key={category.title}
+                className={`${styles.metricsTab} ${selectedCategory === idx ? styles.activeTab : ''}`} 
+                onClick={() => setSelectedCategory(idx)}
+              >
+                {category.title}
+              </button>
+            ))}
+          </div>
+          {/* metrics table */}
+          <div className={styles.metricsCard}>
+            <div className={styles.metricsCategoryTitle}>
+              {metricCategories[selectedCategory].title}
+            </div>
+            <table className={styles.metricsTable}>
+              <tbody>
+                {metricCategories[selectedCategory].fields.map(field => (
+                  info[field.key] !== undefined && (
+                    <tr key={field.key}>
+                      <td>{field.label}</td>
+                      <td>{info[field.key] !== null ? info[field.key] : 'N/A'}</td>
+                    </tr>
+                  )
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* charts */}
+          <div className={`${styles.sectionTitle} ${styles.chartSectionTitle}`}>
             Chart
             <select
               value={selectedChart}
               onChange={e => setSelectedChart(e.target.value)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: 6,
-                border: '1px solid #333',
-                background: '#232a34',
-                color: '#e0e6ef',
-                marginLeft: '1rem'
-              }}
+              className={styles.chartSelect}
             >
               <option value="price">Price History</option>
-              <option value="financials">Financial Statement</option>
+              <option value="volume">Volume</option>
+              <option value="ma">Moving Average</option>
             </select>
           </div>
           <div className={styles.chartSection}>
-            {selectedChart === 'price' && <PriceChart data={historical} />}
-            {selectedChart === 'financials' && <FinancialsChart />}
+            {selectedChart === 'price' && <PriceChart data={data.historical} />}
+            {selectedChart === 'volume' && (
+              <div style={{color: '#fff', background: '#232a34', padding: '1rem', borderRadius: '8px'}}>
+                <strong>Volume Chart (dev placeholder)</strong>
+              </div>
+            )}
+            {selectedChart === 'ma' && (
+              <div style={{color: '#fff', background: '#232a34', padding: '1rem', borderRadius: '8px'}}>
+                <strong>Moving Average Chart (dev placeholder)</strong>
+              </div>
+            )}
           </div>
         </div>
       </div>

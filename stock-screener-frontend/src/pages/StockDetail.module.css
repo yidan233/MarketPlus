@@ -152,6 +152,57 @@
   margin-bottom: 0.5rem; /* Reduce space below selector */
 }
 
+.backButton {
+  background: #232a34;
+  color: #4f8cff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  margin-right: 1.5rem;
+}
+
+.chartSelect {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #232a34;
+  color: #e0e6ef;
+  margin-left: 1rem;
+}
+
+.chartSectionTitle {
+  margin-top: 2rem;
+}
+
+.metricsTabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.metricsTab {
+  background: #232a34;
+  color: #7fa7ff;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  padding: 8px 18px;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.metricsTab:hover,
+.activeTab {
+  background: #181c23;
+  color: #fff;
+}
+
 @media (max-width: 900px) {
   .main {
     flex-direction: column;

@@ -9,6 +9,8 @@ sys.path.insert(0, project_root)
 import argparse
 import logging
 from app.database.setup import setup_database
+import threading
+from app.data.price_worker import fetch_and_cache_prices, REFRESH_INTERVAL
 
 
 logging.basicConfig(
@@ -16,6 +18,12 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+def start_price_worker():
+    import time
+    while True:
+        fetch_and_cache_prices()
+        time.sleep(REFRESH_INTERVAL)
 
 def main():
     try:
@@ -38,8 +46,12 @@ def main():
     
   
     args, remaining = parser.parse_known_args()
-    
 
+    # start the background task to fetch price 
+
+    worker_thread = threading.Thread(target=start_price_worker, daemon=True)
+    worker_thread.start()
+    
     # mode 1: command line interface 
     if args.mode == 'cli':
         logger.info("Starting in CLI mode")
@@ -52,7 +64,8 @@ def main():
     elif args.mode == 'api':
         logger.info("Starting in API mode")
         from app.api import app 
-        app.run(debug=True, host='0.0.0.0', port=5000) # running at port 5000!
+        app.run(debug=True, host='0.0.0.0', port=5000) 
+        
 
 
 if __name__ == "__main__":

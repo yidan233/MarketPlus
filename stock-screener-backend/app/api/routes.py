@@ -6,6 +6,7 @@ import logging
 from app.data.db_utils import load_from_database
 from app.database import SessionLocal
 from app.data.redis_cache import get_price
+from app.database.models import Stock
 
 
 logging.basicConfig(
@@ -220,23 +221,19 @@ def api_docs():
 @api_bp.route('/stock/<symbol>', methods=['GET'])
 def get_stock_detail(symbol):
     try:
-        stock_data = load_from_database(symbol, SessionLocal)
-        if not stock_data:
+        data = load_from_database(symbol, SessionLocal)
+        if not data:
             return jsonify({'error': 'Stock not found'}), 404
 
-        # Fetch the latest live price from Redis
+        # Optionally, add live price from Redis
         live_price = get_price(symbol)
-        
-        historical = []
-        if 'historical' in stock_data and hasattr(stock_data['historical'], 'to_dict'):
-            historical = stock_data['historical'].reset_index().to_dict(orient='records')
+        data['live_price'] = live_price
 
-        return jsonify({
-            'info': stock_data.get('info', {}),
-            'historical': historical,
-            'last_updated': stock_data.get('last_updated'),
-            'live_price': live_price  # Add live price from Redis
-        })
+        # Convert historical DataFrame to JSON-serializable format
+        if 'historical' in data and hasattr(data['historical'], 'to_dict'):
+            data['historical'] = data['historical'].reset_index().to_dict(orient='records')
+
+        return jsonify(data)
     except Exception as e:
         logger.error(f"Error getting stock detail for {symbol}: {e}")
         return jsonify({'error': str(e)}), 500
