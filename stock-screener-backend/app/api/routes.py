@@ -6,8 +6,6 @@ import logging
 from app.data.db_utils import load_from_database
 from app.database import SessionLocal
 from app.data.redis_cache import get_price
-from app.database.models import Stock
-from app.api.auth import auth_bp
 
 
 logging.basicConfig(
@@ -21,13 +19,11 @@ logger = logging.getLogger(__name__)
 screener = StockScreener()
 api_bp = Blueprint('api', __name__, url_prefix='/api/v1')
 
-# Register the auth blueprint
-api_bp.register_blueprint(auth_bp)
 
 
 # those routes are for the screener method ------------------- should be cleaned later 
 
-# screen with fundamental criteria - PROTECTED ROUTE
+# screen with fundamental criteria
 @api_bp.route('/screen/fundamental', methods=['POST'])
 def screen_fundamental():
     try:

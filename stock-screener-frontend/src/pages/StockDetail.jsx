@@ -104,7 +104,7 @@ const StockInfo = () => {
           onClick={() => window.close()}
           className={styles.backButton}
         >
-          ← Back to Screener
+          ← Close
         </button>
         {/* company title */}
         <h1 className={styles.title}>

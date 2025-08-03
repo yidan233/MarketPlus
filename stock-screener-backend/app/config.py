@@ -22,9 +22,6 @@ LOG_LEVEL = os.getenv("LOG_LEVEL")
 LOG_FILE = os.getenv("LOG_FILE")
 
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-
-
 REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PORT = int(os.getenv("REDIS_PORT"))
 REDIS_DB = int(os.getenv("REDIS_DB"))

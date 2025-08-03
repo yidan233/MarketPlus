@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import Sidebar from './components/Sidebar'
 import Screener from './pages/Screener'
 import StockDetail from './pages/StockDetail'
+import StockSearch from './pages/StockSearch'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import './App.css'
@@ -25,6 +26,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Screener />} />
             <Route path="/stock/:symbol" element={<StockDetail />} />
+            <Route path="/stock-search" element={<StockSearch />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
           </Routes>

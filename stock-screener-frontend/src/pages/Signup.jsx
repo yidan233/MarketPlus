@@ -11,7 +11,7 @@ const Signup = () => {
     confirmPassword: ''
   })
   const [isLoading, setIsLoading] = useState(false)
-  const { register, error, clearError } = useAuth()
+  const { register, error, clearError, login } = useAuth()
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
@@ -20,17 +20,25 @@ const Signup = () => {
     clearError()
 
     if (userData.password !== userData.confirmPassword) {
-      // Handle password mismatch
+      setError('Passwords do not match')
+      setIsLoading(false)
       return
     }
 
     try {
-      await register({
+      const result = await register({
         username: userData.username,
         email: userData.email,
         password: userData.password
       })
-      navigate('/login') // Redirect to login after successful registration
+      
+      // Auto-login after successful registration
+      await login({
+        username: userData.username,
+        password: userData.password
+      })
+      
+      navigate('/') // Redirect to home page
     } catch (error) {
       // Error is handled by AuthContext
     } finally {
