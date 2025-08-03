@@ -211,3 +211,34 @@ html, body, #root {
   background: #232a34;
   border-radius: 1rem;
 }
+
+.sidebar-toggle {
+  position: fixed;
+  left: 2rem;
+  z-index: 1100;
+  background: rgba(35, 42, 52, 0.4);
+  color: #e0e6ef;
+  border: none;
+  border-radius: 50%;
+  padding: 1rem;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 1;
+  visibility: visible;
+}
+
+.sidebar-toggle:hover {
+  background: rgba(35, 42, 52, 0.7);
+  transform: scale(1.1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Hide the button when sidebar is open */
+.sidebar-toggle.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}

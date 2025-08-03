@@ -7,6 +7,7 @@ from app.data.db_utils import load_from_database
 from app.database import SessionLocal
 from app.data.redis_cache import get_price
 from app.database.models import Stock
+from app.api.auth import auth_bp
 
 
 logging.basicConfig(
@@ -20,8 +21,13 @@ logger = logging.getLogger(__name__)
 screener = StockScreener()
 api_bp = Blueprint('api', __name__, url_prefix='/api/v1')
 
+# Register the auth blueprint
+api_bp.register_blueprint(auth_bp)
 
-# screen with fundamental criteria 
+
+# those routes are for the screener method ------------------- should be cleaned later 
+
+# screen with fundamental criteria - PROTECTED ROUTE
 @api_bp.route('/screen/fundamental', methods=['POST'])
 def screen_fundamental():
     try:
@@ -36,9 +42,8 @@ def screen_fundamental():
         
         criteria = parse_criteria(criteria_str)
         if not criteria:
-            return jsonify({'error': 'Technical criteria required'}), 400
+            return jsonify({'error': 'Fundamental criteria required'}), 400
         
-
         symbols = get_stock_symbols(index=index)
         screener.load_data(symbols=symbols, reload=reload, period=period, interval=interval)
         results = screen_stocks(screener.stock_data, criteria, limit=limit)

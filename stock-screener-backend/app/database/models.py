@@ -1,6 +1,8 @@
 from sqlalchemy import Column, String, Float, Integer, Date, ForeignKey, JSON, DateTime, Text, UniqueConstraint
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
 # Create declarative base
 Base = declarative_base()
@@ -38,7 +40,7 @@ class HistoricalPrice(Base):
     volume = Column(Integer, nullable=False)
     adj_close = Column(Float)
     created_at = Column(DateTime, default=func.now())
-    stock = relationship("Stock", back_populates="prices")
+    stock = relationship("Stock", back_populates="prices") # price is linked to this 
     
     # ensure no duplicate data 
     __table_args__ = (
@@ -62,6 +64,27 @@ class ScreeningResult(Base):
     
     def __repr__(self):
         return f"<ScreeningResult(criteria_hash='{self.criteria_hash}', index='{self.index_used}')>"
+
+class User(Base, UserMixin):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(80), unique=True, nullable=False, index=True)
+    email = Column(String(120), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=func.now())
+    last_login = Column(DateTime)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def get_id(self):
+        return str(self.id) 
+
+    def __repr__(self):
+        return f"<User(username='{self.username}', email='{self.email}')>"
 
 def create_tables(engine=None):
     if engine is None:
