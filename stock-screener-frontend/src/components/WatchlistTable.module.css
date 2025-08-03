@@ -1,0 +1,212 @@
+.tableContainer {
+  width: 100%;
+}
+
+.tableHeader {
+  margin-bottom: 2rem;
+}
+
+.tableHeader h3 {
+  font-size: 1.5rem;
+  color: #e0e6ef;
+  margin-bottom: 0.5rem;
+}
+
+.tableHeader p {
+  color: #b0b8c1;
+  font-size: 1rem;
+}
+
+.watchesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.watchCard {
+  background: #181c20;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.watchCard:hover {
+  border-color: #4f8cff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.watchHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.watchInfo {
+  flex: 1;
+}
+
+.watchName {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #e0e6ef;
+  margin: 0 0 0.25rem 0;
+}
+
+.watchIndex {
+  background: #4f8cff;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.watchActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toggleButton, .deleteButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  font-size: 1.2rem;
+}
+
+.toggleButton:hover {
+  background: rgba(79, 140, 255, 0.2);
+}
+
+.deleteButton:hover {
+  background: rgba(255, 107, 107, 0.2);
+}
+
+.watchDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.criteriaInfo, .alertInfo, .dateInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #333;
+}
+
+.criteriaInfo:last-child, .alertInfo:last-child, .dateInfo:last-child {
+  border-bottom: none;
+}
+
+.criteriaLabel, .alertLabel, .dateLabel {
+  font-weight: 600;
+  color: #b0b8c1;
+  font-size: 0.9rem;
+}
+
+.criteriaText, .alertText, .dateText {
+  color: #e0e6ef;
+  font-size: 0.9rem;
+}
+
+.viewButton {
+  background: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.viewButton:hover {
+  background: #219a52;
+}
+
+.matchCount {
+  text-align: center;
+  color: #4f8cff;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.loadingMessage {
+  color: #b0b8c1;
+  font-size: 1.1rem;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.emptyIcon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.emptyState h3 {
+  color: #e0e6ef;
+  margin-bottom: 1rem;
+}
+
+.emptyState p {
+  color: #b0b8c1;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+.createButton {
+  background: #4f8cff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.createButton:hover {
+  background: #3a7bd5;
+}
+
+@media (max-width: 768px) {
+  .watchesGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .watchCard {
+    padding: 1rem;
+  }
+  
+  .watchHeader {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .watchActions {
+    align-self: flex-end;
+  }
+} 

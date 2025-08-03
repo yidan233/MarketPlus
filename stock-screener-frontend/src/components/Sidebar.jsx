@@ -114,10 +114,15 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span className={styles["nav-icon"]}>🔍</span>
                 Stock Search
               </button>
-              <button className={`${styles["nav-item"]} ${styles.disabled}`}>
+              <button 
+                className={styles["nav-item"]}
+                onClick={() => {
+                  navigate('/watchlist');
+                  onClose();
+                }}
+              >
                 <span className={styles["nav-icon"]}>⭐</span>
                 Watchlist
-                <span className={styles["coming-soon"]}>Coming Soon</span>
               </button>
               <button className={`${styles["nav-item"]} ${styles.disabled}`}>
                 <span className={styles["nav-icon"]}>📈</span>

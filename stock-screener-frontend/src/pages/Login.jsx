@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import './Auth.css'
@@ -9,8 +9,18 @@ const Login = () => {
     password: ''
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [authMessage, setAuthMessage] = useState('')
   const { login, error, clearError } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    // Check if there's a message from ProtectedRoute
+    const message = sessionStorage.getItem('authMessage')
+    if (message) {
+      setAuthMessage(message)
+      sessionStorage.removeItem('authMessage') // Clear it after showing
+    }
+  }, [])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -39,6 +49,12 @@ const Login = () => {
       <div className="auth-container">
         <h1>Welcome Back</h1>
         <p>Sign in to your account</p>
+        
+        {authMessage && (
+          <div className="auth-message">
+            {authMessage}
+          </div>
+        )}
         
         {error && <div className="error-message">{error}</div>}
         

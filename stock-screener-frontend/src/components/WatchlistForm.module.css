@@ -1,0 +1,116 @@
+.formContainer {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.section {
+  background: #181c20;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #333;
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #e0e6ef;
+  margin-bottom: 1rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.inputGroup label {
+  font-weight: 600;
+  color: #b0b8c1;
+  font-size: 0.9rem;
+}
+
+.input, .select {
+  padding: 0.75rem;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #232a34;
+  color: #e0e6ef;
+  font-size: 1rem;
+  transition: border-color 0.3s ease;
+}
+
+.input:focus, .select:focus {
+  outline: none;
+  border-color: #4f8cff;
+  box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.2);
+}
+
+.criterionRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem;
+  background: #232a34;
+  border-radius: 6px;
+}
+
+.fieldSelect, .operatorSelect {
+  padding: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #181c20;
+  color: #e0e6ef;
+  font-size: 0.9rem;
+}
+
+.alertSettings {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  color: #e0e6ef;
+  padding: 0.5rem 0;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: #4f8cff;
+  cursor: pointer;
+  margin: 0;
+}
+
+.checkboxText {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.alertInfo {
+  background: rgba(79, 140, 255, 0.1);
+  border: 1px solid rgba(79, 140, 255, 0.3);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+}
+
+.alertDescription {
+  color: #b0b8c1;
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.4;
+}
