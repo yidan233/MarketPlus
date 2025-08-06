@@ -1,0 +1,115 @@
+.container {
+  background: #181c20;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #333;
+  margin-top: 1rem;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.header h3 {
+  color: #e0e6ef;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.refreshButton, .clearButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #232a34;
+  color: #e0e6ef;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.refreshButton:hover {
+  background: #4f8cff;
+  border-color: #4f8cff;
+}
+
+.clearButton:hover {
+  background: #dc3545;
+  border-color: #dc3545;
+}
+
+.noMatches {
+  text-align: center;
+  color: #b0b8c1;
+  padding: 2rem;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.matchesTable {
+  width: 100%;
+  border-collapse: collapse;
+  color: #e0e6ef;
+}
+
+.matchesTable th,
+.matchesTable td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+.matchesTable th {
+  background: #232a34;
+  font-weight: 600;
+  color: #b0b8c1;
+}
+
+.symbol {
+  font-weight: 600;
+  color: #4f8cff;
+}
+
+.price {
+  font-family: monospace;
+  color: #28a745;
+}
+
+.date {
+  color: #b0b8c1;
+  font-size: 0.9rem;
+}
+
+.deleteButton {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+  background: transparent;
+  color: #dc3545;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.deleteButton:hover {
+  background: #dc3545;
+  color: white;
+}
+
+.loading {
+  text-align: center;
+  color: #b0b8c1;
+  padding: 2rem;
+}
+
+.error {
+  text-align: center;
+  color: #dc3545;
+  padding: 2rem;
+} 

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import ScreenerForm from '../components/ScreenerForm'
 import StockTable from '../components/StockTable'
 import styles from './Screener.module.css'
+// Remove: import indexedDBService from '../services/indexedDB'
 
 function criteriaToString(val) {
   if (!val) return '';

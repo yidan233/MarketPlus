@@ -72,6 +72,39 @@
   font-size: 0.9rem;
 }
 
+/* Add styles for the value input */
+.valueInput {
+  padding: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+  background: #181c20;
+  color: #e0e6ef;
+  font-size: 0.9rem;
+  transition: border-color 0.3s ease;
+}
+
+.valueInput:focus {
+  outline: none;
+  border-color: #4f8cff;
+  box-shadow: 0 0 0 2px rgba(79, 140, 255, 0.2);
+}
+
+.valueInput::placeholder {
+  color: #666;
+  font-style: italic;
+}
+
+/* Style for number inputs specifically */
+.valueInput[type="number"] {
+  -moz-appearance: textfield; /* Firefox */
+}
+
+.valueInput[type="number"]::-webkit-outer-spin-button,
+.valueInput[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .alertSettings {
   display: flex;
   flex-direction: column;

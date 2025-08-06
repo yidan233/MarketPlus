@@ -122,19 +122,101 @@ def save_to_database(symbol, data, session_factory):
             prices_to_add = []
             
             for _, row in hist_df.iterrows():
-                date_val = row['Date'].iloc[0] if isinstance(row['Date'], pd.Series) else row['Date']
-                date_obj = pd.to_datetime(date_val).date() if not isinstance(date_val, datetime) else date_val.date()
-                historical_price = HistoricalPrice(
-                    symbol=symbol,
-                    date=date_obj,
-                    open=float(row['Open']) if pd.notna(row['Open']) else None,
-                    high=float(row['High']) if pd.notna(row['High']) else None,
-                    low=float(row['Low']) if pd.notna(row['Low']) else None,
-                    close=float(row['Close']) if pd.notna(row['Close']) else None,
-                    volume=int(row['Volume']) if pd.notna(row['Volume']) else None,
-                    adj_close=float(row['Adj Close']) if 'Adj Close' in row and pd.notna(row['Adj Close']) else None
-                )
-                prices_to_add.append(historical_price)
+                try:
+                    # Handle potential MultiIndex columns
+                    date_val = row['Date']
+                    if isinstance(date_val, pd.Series):
+                        date_val = date_val.iloc[0]
+                    
+                    date_obj = pd.to_datetime(date_val).date() if not isinstance(date_val, datetime) else date_val.date()
+                    
+                    # Debug: Print available columns to understand the structure
+                    logger.debug(f"Available columns for {symbol}: {list(row.index)}")
+                    
+                    # Try different ways to access the price data
+                    open_val = None
+                    high_val = None
+                    low_val = None
+                    close_val = None
+                    volume_val = None
+                    adj_close_val = None
+                    
+                    # Try standard column names first
+                    if 'Open' in row:
+                        open_val = row['Open']
+                    elif f'{symbol}_Open' in row:
+                        open_val = row[f'{symbol}_Open']
+                    elif ('Open',) in row:
+                        open_val = row[('Open',)]
+                    elif (symbol, 'Open') in row:
+                        open_val = row[(symbol, 'Open')]
+                        
+                    # Same pattern for other columns
+                    if 'High' in row:
+                        high_val = row['High']
+                    elif f'{symbol}_High' in row:
+                        high_val = row[f'{symbol}_High']
+                    elif ('High',) in row:
+                        high_val = row[('High',)]
+                    elif (symbol, 'High') in row:
+                        high_val = row[(symbol, 'High')]
+                        
+                    if 'Low' in row:
+                        low_val = row['Low']
+                    elif f'{symbol}_Low' in row:
+                        low_val = row[f'{symbol}_Low']
+                    elif ('Low',) in row:
+                        low_val = row[('Low',)]
+                    elif (symbol, 'Low') in row:
+                        low_val = row[(symbol, 'Low')]
+                        
+                    if 'Close' in row:
+                        close_val = row['Close']
+                    elif f'{symbol}_Close' in row:
+                        close_val = row[f'{symbol}_Close']
+                    elif ('Close',) in row:
+                        close_val = row[('Close',)]
+                    elif (symbol, 'Close') in row:
+                        close_val = row[(symbol, 'Close')]
+                        
+                    if 'Volume' in row:
+                        volume_val = row['Volume']
+                    elif f'{symbol}_Volume' in row:
+                        volume_val = row[f'{symbol}_Volume']
+                    elif ('Volume',) in row:
+                        volume_val = row[('Volume',)]
+                    elif (symbol, 'Volume') in row:
+                        volume_val = row[(symbol, 'Volume')]
+                        
+                    if 'Adj Close' in row:
+                        adj_close_val = row['Adj Close']
+                    elif f'{symbol}_Adj Close' in row:
+                        adj_close_val = row[f'{symbol}_Adj Close']
+                    elif ('Adj Close',) in row:
+                        adj_close_val = row[('Adj Close',)]
+                    elif (symbol, 'Adj Close') in row:
+                        adj_close_val = row[(symbol, 'Adj Close')]
+                    
+                    # Skip rows where we can't get the required data
+                    if open_val is None or close_val is None:
+                        logger.warning(f"Skipping row for {symbol} - missing required price data")
+                        continue
+                        
+                    historical_price = HistoricalPrice(
+                        symbol=symbol,
+                        date=date_obj,
+                        open=float(open_val) if pd.notna(open_val) else None,
+                        high=float(high_val) if pd.notna(high_val) else None,
+                        low=float(low_val) if pd.notna(low_val) else None,
+                        close=float(close_val) if pd.notna(close_val) else None,
+                        volume=int(volume_val) if pd.notna(volume_val) else None,
+                        adj_close=float(adj_close_val) if pd.notna(adj_close_val) else None
+                    )
+                    prices_to_add.append(historical_price)
+                    
+                except Exception as e:
+                    logger.error(f"Error processing row for {symbol}: {e}")
+                    continue
             session.add_all(prices_to_add)
         session.commit()
         

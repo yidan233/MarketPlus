@@ -1,9 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { 
-  findUserByCredentials, 
-  findUserByUsernameOrEmail, 
-  addUser 
-} from '../services/userDatabase'
+import indexedDBService from '../services/indexedDB'
 
 const AuthContext = createContext()
 
@@ -20,14 +16,19 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Check authentication status on app load
+  // Initialize database and check authentication status on app load
   useEffect(() => {
-    checkAuthStatus()
+    initializeApp()
   }, [])
 
-  const checkAuthStatus = () => {
+  const initializeApp = async () => {
     try {
       setLoading(true)
+      
+      // Initialize IndexedDB
+      await indexedDBService.init()
+      
+      // Check for existing user session
       const storedUser = localStorage.getItem('user')
       if (storedUser) {
         const userData = JSON.parse(storedUser)
@@ -36,7 +37,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null)
       }
     } catch (error) {
-      console.error('Auth status check failed:', error)
+      console.error('App initialization failed:', error)
       setUser(null)
       localStorage.removeItem('user')
     } finally {
@@ -51,8 +52,11 @@ export const AuthProvider = ({ children }) => {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500))
       
-      // Find user in database
-      const foundUser = findUserByCredentials(credentials.username, credentials.password)
+      // Find user in IndexedDB
+      const foundUser = await indexedDBService.findUserByCredentials(
+        credentials.username, 
+        credentials.password
+      )
       
       if (!foundUser) {
         throw new Error('Invalid username or password')
@@ -66,7 +70,7 @@ export const AuthProvider = ({ children }) => {
         createdAt: foundUser.createdAt
       }
       
-      // Store user in localStorage
+      // Store user in localStorage (for session management)
       localStorage.setItem('user', JSON.stringify(userData))
       setUser(userData)
       
@@ -86,14 +90,17 @@ export const AuthProvider = ({ children }) => {
       await new Promise(resolve => setTimeout(resolve, 500))
       
       // Check if user already exists
-      const existingUser = findUserByUsernameOrEmail(userData.username, userData.email)
+      const existingUser = await indexedDBService.findUserByUsernameOrEmail(
+        userData.username, 
+        userData.email
+      )
       
       if (existingUser) {
         throw new Error('Username or email already exists')
       }
       
-      // Add new user to database
-      const newUser = addUser(userData)
+      // Add new user to IndexedDB
+      const newUser = await indexedDBService.addUser(userData)
       
       return { 
         message: 'Registration successful! You can now log in.',
@@ -133,8 +140,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    clearError,
-    checkAuthStatus
+    clearError
   }
 
   return (

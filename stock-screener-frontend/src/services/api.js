@@ -47,3 +47,21 @@ export const stockApi = {
     return response.data
   },
 }
+
+// News API============================================================
+export const newsApi = {
+  getMarketNews: async (limit = 20) => {
+    const response = await api.get(`/news/market?limit=${limit}`)
+    return response.data
+  },
+
+  getTopHeadlines: async (limit = 10) => {
+    const response = await api.get(`/news/top-headlines?limit=${limit}`)
+    return response.data
+  },
+
+  getNewsHealth: async () => {
+    const response = await api.get('/news/health')
+    return response.data
+  },
+}

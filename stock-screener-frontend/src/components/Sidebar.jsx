@@ -117,6 +117,16 @@ const Sidebar = ({ isOpen, onClose }) => {
               <button 
                 className={styles["nav-item"]}
                 onClick={() => {
+                  navigate('/news');
+                  onClose();
+                }}
+              >
+                <span className={styles["nav-icon"]}>📰</span>
+                News
+              </button>
+              <button 
+                className={styles["nav-item"]}
+                onClick={() => {
                   navigate('/watchlist');
                   onClose();
                 }}

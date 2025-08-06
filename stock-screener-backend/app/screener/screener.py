@@ -37,7 +37,7 @@ class StockScreener:
         '!=': operator.ne
     }
     
-    def __init__(self, auto_setup_db=False):
+    def __init__(self, auto_setup_db=True):
         self.indicators = TechnicalIndicators()
         self.stock_data = {} # will hold all loaded stock data for display 
         if auto_setup_db:

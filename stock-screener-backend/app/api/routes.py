@@ -6,6 +6,7 @@ import logging
 from app.data.db_utils import load_from_database
 from app.database import SessionLocal
 from app.data.redis_cache import get_price
+from app.services.chatbot_service import chatbot
 
 
 logging.basicConfig(
@@ -185,7 +186,14 @@ def api_docs():
             'POST /api/v1/screen/combined': 'Screen stocks by both criteria',
             'GET /api/v1/indexes': 'Get available stock indexes',
             'GET /api/v1/symbols/<index>': 'Get stock symbols for an index',
-            'GET /api/v1/indicators': 'Get available indicators and fields'
+            'GET /api/v1/indicators': 'Get available indicators and fields',
+            'GET /api/v1/stock/<symbol>': 'Get detailed stock information',
+            'POST /api/v1/chatbot/advice': 'Get advice from the AI chatbot',
+            'GET /api/v1/chatbot/health': 'Check chatbot availability',
+            'GET /api/v1/news/market': 'Get general market news',
+            'GET /api/v1/news/stock/<symbol>': 'Get news for a specific stock',
+            'GET /api/v1/news/top-headlines': 'Get top financial headlines',
+            'GET /api/v1/news/health': 'Check news service availability'
         },
         'examples': {
             'fundamental_screening': {
@@ -215,6 +223,28 @@ def api_docs():
                     'technical_criteria': 'rsi>40',
                     'limit': 10
                 }
+            },
+            'chatbot_advice': {
+                'url': '/api/v1/chatbot/advice',
+                'method': 'POST',
+                'body': {
+                    'question': 'Which index should I use for technology stocks?'
+                }
+            },
+            'market_news': {
+                'url': '/api/v1/news/market?limit=5',
+                'method': 'GET',
+                'description': 'Get 5 latest market news articles'
+            },
+            'stock_news': {
+                'url': '/api/v1/news/stock/AAPL?limit=3',
+                'method': 'GET',
+                'description': 'Get 3 latest news articles for Apple'
+            },
+            'top_headlines': {
+                'url': '/api/v1/news/top-headlines?limit=10',
+                'method': 'GET',
+                'description': 'Get 10 top financial headlines'
             }
         }
     })
@@ -239,5 +269,48 @@ def get_stock_detail(symbol):
         logger.error(f"Error getting stock detail for {symbol}: {e}")
         return jsonify({'error': str(e)}), 500
 
+# Add chatbot routes before register_routes function
+@api_bp.route('/chatbot/advice', methods=['POST'])
+def get_chatbot_advice():
+    """Get advice from the chatbot"""
+    try:
+        data = request.get_json()
+        if not data or 'question' not in data:
+            return jsonify({'error': 'Question is required'}), 400
+        
+        question = data['question'].strip()
+        if not question:
+            return jsonify({'error': 'Question cannot be empty'}), 400
+        
+        # Determine the type of advice needed
+        index_keywords = ['index', 'sp500', 'nasdaq', 'dow', 's&p', 'which index', 'what index']
+        screening_keywords = ['screening', 'criteria', 'fields', 'fundamental', 'technical', 'pe_ratio', 'rsi', 'market_cap']
+        
+        is_index_question = any(keyword in question.lower() for keyword in index_keywords)
+        is_screening_question = any(keyword in question.lower() for keyword in screening_keywords)
+        
+        if is_index_question:
+            response = chatbot.get_index_advice(question)
+        elif is_screening_question:
+            response = chatbot.get_screening_advice(question)
+        else:
+            response = chatbot.get_general_advice(question)
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        logger.error(f"Error in chatbot advice endpoint: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@api_bp.route('/chatbot/health', methods=['GET'])
+def chatbot_health_check():
+    """Check if chatbot is available"""
+    return jsonify({
+        'available': chatbot.model is not None,
+        'model': 'gemini-flash' if chatbot.model else None
+    })
+
 def register_routes(app):
     app.register_blueprint(api_bp)
+    from app.api.news_routes import news_bp
+    app.register_blueprint(news_bp)

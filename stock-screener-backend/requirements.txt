@@ -32,3 +32,6 @@ redis== 5.0.4
 flask_sqlalchemy
 flask_login
 werkzeug
+
+# Gemini AI for chatbot
+google-generativeai==0.3.2

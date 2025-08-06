@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { stockApi } from '../services/api'
 import WatchlistForm from '../components/WatchlistForm'
 import WatchlistTable from '../components/WatchlistTable'
+import indexedDBService from '../services/indexedDB'
 import styles from './Watchlist.module.css'
 
 const Watchlist = () => {
@@ -22,10 +23,11 @@ const Watchlist = () => {
   const loadUserWatches = async () => {
     try {
       setLoading(true)
-      // This would be an API call to get user's watches
-      const userWatches = JSON.parse(localStorage.getItem(`watchlist_${user.id}`) || '[]')
+      // Load from IndexedDB instead of localStorage
+      const userWatches = await indexedDBService.getUserWatchlists(user.id)
       setWatches(userWatches)
     } catch (error) {
+      console.error('Failed to load watchlist:', error)
       setError('Failed to load watchlist')
     } finally {
       setLoading(false)
@@ -40,7 +42,7 @@ const Watchlist = () => {
       console.log('Received watchData:', watchData)
       
       const newWatch = {
-        id: Date.now(),
+        userId: user.id,
         name: watchData.name,
         criteria: {  // ← Ensure proper structure
           fundamental_criteria: watchData.criteria?.fundamental_criteria || [],
@@ -49,7 +51,6 @@ const Watchlist = () => {
         emailAlerts: watchData.emailAlerts,
         alertFrequency: watchData.alertFrequency,
         index: watchData.index,
-        created: new Date().toISOString(),
         lastChecked: null,
         matches: [],
         isActive: true
@@ -58,14 +59,15 @@ const Watchlist = () => {
       // Debug log to see what we're creating
       console.log('Created newWatch:', newWatch)
 
-      const updatedWatches = [...watches, newWatch]
-      setWatches(updatedWatches)
+      // Save to IndexedDB
+      const savedWatch = await indexedDBService.addWatchlist(newWatch)
       
-      // Save to localStorage
-      localStorage.setItem(`watchlist_${user.id}`, JSON.stringify(updatedWatches))
+      // Update local state
+      setWatches(prev => [...prev, savedWatch])
       
       setActiveTab('watches')
     } catch (error) {
+      console.error('Failed to create watch:', error)
       setError('Failed to create watch')
     } finally {
       setLoading(false)
@@ -74,24 +76,33 @@ const Watchlist = () => {
 
   const deleteWatch = async (watchId) => {
     try {
-      const updatedWatches = watches.filter(watch => watch.id !== watchId)
-      setWatches(updatedWatches)
-      localStorage.setItem(`watchlist_${user.id}`, JSON.stringify(updatedWatches))
+      // Delete from IndexedDB
+      await indexedDBService.deleteWatchlist(watchId)
+      
+      // Update local state
+      setWatches(prev => prev.filter(watch => watch.id !== watchId))
     } catch (error) {
+      console.error('Failed to delete watch:', error)
       setError('Failed to delete watch')
     }
   }
 
   const toggleWatch = async (watchId) => {
     try {
-      const updatedWatches = watches.map(watch => 
-        watch.id === watchId 
-          ? { ...watch, isActive: !watch.isActive }
-          : watch
-      )
-      setWatches(updatedWatches)
-      localStorage.setItem(`watchlist_${user.id}`, JSON.stringify(updatedWatches))
+      const watchToUpdate = watches.find(w => w.id === watchId)
+      if (!watchToUpdate) return
+
+      const updatedWatch = { ...watchToUpdate, isActive: !watchToUpdate.isActive }
+      
+      // Update in IndexedDB
+      await indexedDBService.updateWatchlist(watchId, { isActive: updatedWatch.isActive })
+      
+      // Update local state
+      setWatches(prev => prev.map(watch => 
+        watch.id === watchId ? updatedWatch : watch
+      ))
     } catch (error) {
+      console.error('Failed to update watch:', error)
       setError('Failed to update watch')
     }
   }

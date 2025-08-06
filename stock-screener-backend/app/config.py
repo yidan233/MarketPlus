@@ -25,3 +25,10 @@ LOG_FILE = os.getenv("LOG_FILE")
 REDIS_HOST = os.getenv("REDIS_HOST")
 REDIS_PORT = int(os.getenv("REDIS_PORT"))
 REDIS_DB = int(os.getenv("REDIS_DB"))
+
+
+# Gemini AI Configuration
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# News API Configuration
+NEWS_API_KEY = os.getenv("NEWS_API_KEY")

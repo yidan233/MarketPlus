@@ -71,7 +71,6 @@ def _fetch_fresh_data(symbols, period="1y", interval="1d"):
     if isinstance(symbols, str):
         symbols = [symbols]
     
-    # split the fresh data from yfinance into batches of size 20 
     batch_size = 20
     symbol_batches = [symbols[i:i + batch_size] for i in range(0, len(symbols), batch_size)]
 
