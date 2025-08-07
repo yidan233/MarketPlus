@@ -19,11 +19,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# fetch newest price every 60 second 
 def start_price_worker():
     import time
     while True:
         fetch_and_cache_prices()
-        time.sleep(REFRESH_INTERVAL)
+        time.sleep(REFRESH_INTERVAL) 
 
 def main():
     try:

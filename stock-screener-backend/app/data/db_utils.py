@@ -130,76 +130,135 @@ def save_to_database(symbol, data, session_factory):
                     
                     date_obj = pd.to_datetime(date_val).date() if not isinstance(date_val, datetime) else date_val.date()
                     
-                    # Debug: Print available columns to understand the structure
-                    logger.debug(f"Available columns for {symbol}: {list(row.index)}")
+                    # Get all available columns for debugging
+                    available_columns = list(row.index)
+                    logger.debug(f"{symbol}: Available columns: {available_columns}")
                     
-                    # Try different ways to access the price data
-                    open_val = None
-                    high_val = None
-                    low_val = None
-                    close_val = None
-                    volume_val = None
-                    adj_close_val = None
+                    # Helper function to find column by pattern
+                    def find_column_value(row, column_patterns):
+                        """Find column value by trying multiple patterns"""
+                        for pattern in column_patterns:
+                            if pattern in row:
+                                return row[pattern]
+                        return None
                     
-                    # Try standard column names first
-                    if 'Open' in row:
-                        open_val = row['Open']
-                    elif f'{symbol}_Open' in row:
-                        open_val = row[f'{symbol}_Open']
-                    elif ('Open',) in row:
-                        open_val = row[('Open',)]
-                    elif (symbol, 'Open') in row:
-                        open_val = row[(symbol, 'Open')]
-                        
-                    # Same pattern for other columns
-                    if 'High' in row:
-                        high_val = row['High']
-                    elif f'{symbol}_High' in row:
-                        high_val = row[f'{symbol}_High']
-                    elif ('High',) in row:
-                        high_val = row[('High',)]
-                    elif (symbol, 'High') in row:
-                        high_val = row[(symbol, 'High')]
-                        
-                    if 'Low' in row:
-                        low_val = row['Low']
-                    elif f'{symbol}_Low' in row:
-                        low_val = row[f'{symbol}_Low']
-                    elif ('Low',) in row:
-                        low_val = row[('Low',)]
-                    elif (symbol, 'Low') in row:
-                        low_val = row[(symbol, 'Low')]
-                        
-                    if 'Close' in row:
-                        close_val = row['Close']
-                    elif f'{symbol}_Close' in row:
-                        close_val = row[f'{symbol}_Close']
-                    elif ('Close',) in row:
-                        close_val = row[('Close',)]
-                    elif (symbol, 'Close') in row:
-                        close_val = row[(symbol, 'Close')]
-                        
-                    if 'Volume' in row:
-                        volume_val = row['Volume']
-                    elif f'{symbol}_Volume' in row:
-                        volume_val = row[f'{symbol}_Volume']
-                    elif ('Volume',) in row:
-                        volume_val = row[('Volume',)]
-                    elif (symbol, 'Volume') in row:
-                        volume_val = row[(symbol, 'Volume')]
-                        
-                    if 'Adj Close' in row:
-                        adj_close_val = row['Adj Close']
-                    elif f'{symbol}_Adj Close' in row:
-                        adj_close_val = row[f'{symbol}_Adj Close']
-                    elif ('Adj Close',) in row:
-                        adj_close_val = row[('Adj Close',)]
-                    elif (symbol, 'Adj Close') in row:
-                        adj_close_val = row[(symbol, 'Adj Close')]
+                    # Define all possible column patterns for each field
+                    open_patterns = [
+                        'Open',  # Standard
+                        f'{symbol}_Open',  # Symbol prefix
+                        ('Open',),  # Tuple format
+                        (symbol, 'Open'),  # Symbol tuple
+                        f'Open_{symbol}',  # Reverse prefix
+                        'OPEN',  # Uppercase
+                        'open'   # Lowercase
+                    ]
+                    
+                    high_patterns = [
+                        'High',
+                        f'{symbol}_High',
+                        ('High',),
+                        (symbol, 'High'),
+                        f'High_{symbol}',
+                        'HIGH',
+                        'high'
+                    ]
+                    
+                    low_patterns = [
+                        'Low',
+                        f'{symbol}_Low',
+                        ('Low',),
+                        (symbol, 'Low'),
+                        f'Low_{symbol}',
+                        'LOW',
+                        'low'
+                    ]
+                    
+                    close_patterns = [
+                        'Close',
+                        f'{symbol}_Close',
+                        ('Close',),
+                        (symbol, 'Close'),
+                        f'Close_{symbol}',
+                        'CLOSE',
+                        'close'
+                    ]
+                    
+                    volume_patterns = [
+                        'Volume',
+                        f'{symbol}_Volume',
+                        ('Volume',),
+                        (symbol, 'Volume'),
+                        f'Volume_{symbol}',
+                        'VOLUME',
+                        'volume'
+                    ]
+                    
+                    adj_close_patterns = [
+                        'Adj Close',
+                        f'{symbol}_Adj Close',
+                        ('Adj Close',),
+                        (symbol, 'Adj Close'),
+                        f'Adj Close_{symbol}',
+                        'ADJ CLOSE',
+                        'adj close',
+                        'Adj_Close',
+                        f'{symbol}_Adj_Close',
+                        ('Adj_Close',),
+                        (symbol, 'Adj_Close')
+                    ]
+                    
+                    # Try to find values using patterns
+                    open_val = find_column_value(row, open_patterns)
+                    high_val = find_column_value(row, high_patterns)
+                    low_val = find_column_value(row, low_patterns)
+                    close_val = find_column_value(row, close_patterns)
+                    volume_val = find_column_value(row, volume_patterns)
+                    adj_close_val = find_column_value(row, adj_close_patterns)
+                    
+                    # If still not found, try fuzzy matching
+                    if open_val is None:
+                        open_columns = [col for col in available_columns if 'open' in str(col).lower()]
+                        if open_columns:
+                            open_val = row[open_columns[0]]
+                            logger.debug(f"{symbol}: Found Open via fuzzy match: {open_columns[0]}")
+                    
+                    if high_val is None:
+                        high_columns = [col for col in available_columns if 'high' in str(col).lower()]
+                        if high_columns:
+                            high_val = row[high_columns[0]]
+                            logger.debug(f"{symbol}: Found High via fuzzy match: {high_columns[0]}")
+                    
+                    if low_val is None:
+                        low_columns = [col for col in available_columns if 'low' in str(col).lower()]
+                        if low_columns:
+                            low_val = row[low_columns[0]]
+                            logger.debug(f"{symbol}: Found Low via fuzzy match: {low_columns[0]}")
+                    
+                    if close_val is None:
+                        close_columns = [col for col in available_columns if 'close' in str(col).lower()]
+                        if close_columns:
+                            close_val = row[close_columns[0]]
+                            logger.debug(f"{symbol}: Found Close via fuzzy match: {close_columns[0]}")
+                    
+                    if volume_val is None:
+                        volume_columns = [col for col in available_columns if 'volume' in str(col).lower()]
+                        if volume_columns:
+                            volume_val = row[volume_columns[0]]
+                            logger.debug(f"{symbol}: Found Volume via fuzzy match: {volume_columns[0]}")
+                    
+                    if adj_close_val is None:
+                        adj_close_columns = [col for col in available_columns if 'adj' in str(col).lower() and 'close' in str(col).lower()]
+                        if adj_close_columns:
+                            adj_close_val = row[adj_close_columns[0]]
+                            logger.debug(f"{symbol}: Found Adj Close via fuzzy match: {adj_close_columns[0]}")
+                    
+                    # Log what we found
+                    logger.info(f"{symbol} - Date: {date_obj}, Open: {open_val}, Close: {close_val}, High: {high_val}, Low: {low_val}, Volume: {volume_val}")
                     
                     # Skip rows where we can't get the required data
                     if open_val is None or close_val is None:
-                        logger.warning(f"Skipping row for {symbol} - missing required price data")
+                        logger.error(f"Skipping row for {symbol} - missing required price data. Available columns: {available_columns}")
+                        logger.error(f"Row data: {dict(row)}")
                         continue
                         
                     historical_price = HistoricalPrice(
@@ -216,6 +275,10 @@ def save_to_database(symbol, data, session_factory):
                     
                 except Exception as e:
                     logger.error(f"Error processing row for {symbol}: {e}")
+                    logger.error(f"Row data: {dict(row)}")
+                    logger.error(f"Exception details: {type(e).__name__}: {str(e)}")
+                    import traceback
+                    logger.error(f"Traceback: {traceback.format_exc()}")
                     continue
             session.add_all(prices_to_add)
         session.commit()

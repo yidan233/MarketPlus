@@ -100,20 +100,18 @@ def _fetch_fresh_data(symbols, period="1y", interval="1d"):
                         logger.warning(f"No valid data available for {symbol} after removing NaN values")
                         continue
                     
-                    # standarlize the return result 
-                    # if return (APPL, OPEN) -> APPL_OPEN
-                    # join with underscore like APPL_open 
+                    # Standardize the return result 
+                    # somtimes its like ("AAPL", "CLOSE") -> AAPL_CLOSE 
                     if isinstance(symbol_data.columns, pd.MultiIndex):
                         symbol_data.columns = ['_'.join(col).strip() if isinstance(col, tuple) else col for col in symbol_data.columns.values]
                         logger.info(f"Flattened MultiIndex columns for {symbol}: {symbol_data.columns.tolist()}")
+                    
                     column_rename_map = {}
-
-                    # creae a dict {APPL_Open: Open}
                     for col in symbol_data.columns:
                         if col.startswith(f'{symbol}_'):
-                            standard_col_name = col[len(f'{symbol}_'):]
+                            standard_col_name = col[len(f'{symbol}_'):] # AAPL_CLOSE -> CLOSE
                             column_rename_map[col] = standard_col_name
-                    # rename it 
+                    
                     if column_rename_map:
                         symbol_data = symbol_data.rename(columns=column_rename_map)
                         logger.info(f"Renamed symbol-prefixed columns for {symbol}: {symbol_data.columns.tolist()}")
@@ -123,14 +121,56 @@ def _fetch_fresh_data(symbols, period="1y", interval="1d"):
                         'last_updated': datetime.now().isoformat()
                     }
 
+                    # NEW: More resilient info fetching
+                    info = {'symbol': symbol}  # Start with basic info
+                    
                     try:
                         ticker = yf.Ticker(symbol)
-                        info = ticker.info
-                        if info:
-                            result[symbol]['info'] = info
+                        
+                        # Try to fetch the full info dict first
+                        try:
+                            full_info = ticker.info
+                            if full_info and isinstance(full_info, dict):
+                                info.update(full_info)
+                                logger.info(f"Successfully fetched full info for {symbol} ({len(full_info)} fields)")
+                            else:
+                                logger.warning(f"Full info fetch returned empty/invalid data for {symbol}")
+                        except Exception as e:
+                            logger.warning(f"Full info fetch failed for {symbol}: {e}")
+                        
+                        # If full info failed, try fetching individual important fields
+                        if len(info) <= 1:  # Only has symbol
+                            logger.info(f"Attempting individual field fetch for {symbol}")
+                            
+                            # Define important fields to try individually
+                            important_fields = [
+                                'longBusinessSummary', 'sector', 'industry', 'marketCap', 
+                                'currentPrice', 'trailingPE', 'profitMargins', 'grossProfits',
+                                'totalRevenue', 'revenueGrowth', 'earningsGrowth'
+                            ]
+                            
+                            for field in important_fields:
+                                try:
+                                    # Try different methods to get the field
+                                    if hasattr(ticker, field):
+                                        value = getattr(ticker, field)
+                                        if value is not None:
+                                            info[field] = value
+                                    elif hasattr(ticker, 'info') and hasattr(ticker.info, 'get'):
+                                        value = ticker.info.get(field)
+                                        if value is not None:
+                                            info[field] = value
+                                except Exception as e:
+                                    logger.debug(f"Failed to fetch {field} for {symbol}: {e}")
+                                    continue
+                        
+                        result[symbol]['info'] = info
+                        
                     except Exception as e:
-                        logger.warning(f"Could not fetch info for {symbol}: {e}")
+                        logger.error(f"Could not create ticker for {symbol}: {e}")
                         result[symbol]['info'] = {'symbol': symbol}
+                    
+                    # Fetch financial statements (keep existing logic)
                     try:
                         ticker = yf.Ticker(symbol)
                         result[symbol]['financials'] = {
@@ -140,6 +180,7 @@ def _fetch_fresh_data(symbols, period="1y", interval="1d"):
                         }
                     except Exception as e:
                         logger.warning(f"Could not fetch financial statements for {symbol}: {e}")
+                        
                 except Exception as e:
                     logger.error(f"Error processing data for {symbol}: {e}")
             time.sleep(1)
