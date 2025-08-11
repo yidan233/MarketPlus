@@ -13,7 +13,7 @@ from app.database import (
     backup_database,
     restore_database
 )
-from app.database.connection import SessionLocal, engine
+from app.database import get_engine
 
 class TestDatabase(unittest.TestCase):
     
@@ -25,8 +25,11 @@ class TestDatabase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        print("\n---> Tearing down database connections...")
-        engine.dispose()
+        """
+        Clean up resources after all tests are complete.
+        This ensures that the database connection is properly closed.
+        """
+        get_engine().dispose()
         print("✅ Database connections closed.")
 
     def setUp(self):
@@ -34,60 +37,61 @@ class TestDatabase(unittest.TestCase):
         Set up a new session and fresh test data before each individual test.
         This ensures that tests are independent and don't affect each other.
         """
-        self.session = SessionLocal()
-        self.test_symbol = "TEST_STOCK"
-        
-        # Clean up data with the same symbol from a previously failed test run
-        self.session.query(HistoricalPrice).filter_by(symbol=self.test_symbol).delete()
-        self.session.query(Stock).filter_by(symbol=self.test_symbol).delete()
-        self.session.commit()
-        
-        self.test_stock = Stock(
-            symbol=self.test_symbol,
-            name="Test Company Inc.",
-            sector="Technology",
-            industry="Software - Infrastructure",
-            market_cap=1234567890.0,
-            current_price=150.25,
-            pe_ratio=25.5,
-            dividend_yield=1.5,
-            beta=1.1,
-            info={"note": "This is a complete test object."}
-        )
-        self.session.add(self.test_stock)
-        
-        self.test_prices = []
-        for i in range(5):
-            # This now includes the adj_close field.
-            price = HistoricalPrice(
+        from app.database import get_db_session
+        with get_db_session() as db:
+            self.db = db
+            self.test_symbol = "TEST_STOCK"
+            
+            # Clean up data with the same symbol from a previously failed test run
+            self.db.query(HistoricalPrice).filter_by(symbol=self.test_symbol).delete()
+            self.db.query(Stock).filter_by(symbol=self.test_symbol).delete()
+            self.db.commit()
+            
+            self.test_stock = Stock(
                 symbol=self.test_symbol,
-                date=datetime.now().date() - timedelta(days=i),
-                open=100 + i,
-                high=105 + i,
-                low=99 + i,
-                close=102 + i,
-                adj_close=102.5 + i, # Adjusted close price
-                volume=1000000 + (i * 10000)
+                name="Test Company Inc.",
+                sector="Technology",
+                industry="Software - Infrastructure",
+                market_cap=1234567890.0,
+                current_price=150.25,
+                pe_ratio=25.5,
+                dividend_yield=1.5,
+                beta=1.1,
+                info={"note": "This is a complete test object."}
             )
-            self.test_prices.append(price)
+            self.db.add(self.test_stock)
+            
+            self.test_prices = []
+            for i in range(5):
+                # This now includes the adj_close field.
+                price = HistoricalPrice(
+                    symbol=self.test_symbol,
+                    date=datetime.now().date() - timedelta(days=i),
+                    open=100 + i,
+                    high=105 + i,
+                    low=99 + i,
+                    close=102 + i,
+                    adj_close=102.5 + i, # Adjusted close price
+                    volume=1000000 + (i * 10000)
+                )
+                self.test_prices.append(price)
 
-        self.session.add_all(self.test_prices)
-        self.session.commit()
+            self.db.add_all(self.test_prices)
+            self.db.commit()
 
     def tearDown(self):
         """
         Clean up test data and close the session after each test runs.
         This now also cleans up ScreeningResult objects to ensure test isolation.
         """
-        self.session.query(HistoricalPrice).filter_by(symbol=self.test_symbol).delete()
-        self.session.query(Stock).filter_by(symbol=self.test_symbol).delete()
-        self.session.query(ScreeningResult).delete()
-        self.session.commit()
-        self.session.close()
-
+        self.db.query(HistoricalPrice).filter_by(symbol=self.test_symbol).delete()
+        self.db.query(Stock).filter_by(symbol=self.test_symbol).delete()
+        self.db.query(ScreeningResult).delete()
+        self.db.commit()
+        # No need to close db manually as it's handled by the context manager
 
     def test_get_stock_info(self):
-        stock = self.session.query(Stock).filter_by(symbol=self.test_symbol).first()
+        stock = self.db.query(Stock).filter_by(symbol=self.test_symbol).first()
         self.assertIsNotNone(stock)
         self.assertEqual(stock.name, "Test Company Inc.")
         self.assertEqual(stock.industry, "Software - Infrastructure")
@@ -100,7 +104,7 @@ class TestDatabase(unittest.TestCase):
         end_date = datetime.now().date()
         start_date = end_date - timedelta(days=2) # Should get 3 days of data (day 0, 1, 2)
         
-        prices = self.session.query(HistoricalPrice)\
+        prices = self.db.query(HistoricalPrice)\
             .filter(HistoricalPrice.symbol == self.test_symbol)\
             .filter(HistoricalPrice.date >= start_date)\
             .filter(HistoricalPrice.date <= end_date)\
@@ -110,7 +114,7 @@ class TestDatabase(unittest.TestCase):
 
     def test_stock_to_prices_relationship(self):
         """Test the one-to-many relationship between a Stock and its HistoricalPrices."""
-        stock = self.session.query(Stock).filter_by(symbol=self.test_symbol).first()
+        stock = self.db.query(Stock).filter_by(symbol=self.test_symbol).first()
         self.assertIsNotNone(stock.prices)
         self.assertEqual(len(stock.prices), 5)
         # Check if the back-reference from price to stock works
@@ -130,11 +134,11 @@ class TestDatabase(unittest.TestCase):
             index_used="sp500",
             expires_at=datetime.now() + timedelta(hours=1)
         )
-        self.session.add(cache_entry)
-        self.session.commit()
+        self.db.add(cache_entry)
+        self.db.commit()
 
         # This now queries for the specific entry we created, not just the first one.
-        retrieved_entry = self.session.query(ScreeningResult)\
+        retrieved_entry = self.db.query(ScreeningResult)\
             .filter(ScreeningResult.criteria_hash == criteria_hash)\
             .first()
             
@@ -155,12 +159,12 @@ class TestDatabase(unittest.TestCase):
         results2 = [{"symbol": "TEST2"}]
         entry2 = ScreeningResult(criteria_hash=hash2, criteria=criteria2, results=results2, expires_at=datetime.now() + timedelta(hours=1), index_used="sp500")
         
-        self.session.add_all([entry1, entry2])
-        self.session.commit()
+        self.db.add_all([entry1, entry2])
+        self.db.commit()
 
         # 2. Act: Query for the second entry using its specific hash.
         # This simulates how the real application would look up a cached result.
-        retrieved_entry = self.session.query(ScreeningResult)\
+        retrieved_entry = self.db.query(ScreeningResult)\
             .filter(ScreeningResult.criteria_hash == hash2)\
             .first()
 
@@ -185,17 +189,17 @@ class TestDatabase(unittest.TestCase):
         
         # 3. Reset the database (which wipes all data)
         reset_database()
-        self.assertEqual(self.session.query(Stock).count(), 0)
-        self.assertEqual(self.session.query(HistoricalPrice).count(), 0)
+        self.assertEqual(self.db.query(Stock).count(), 0)
+        self.assertEqual(self.db.query(HistoricalPrice).count(), 0)
 
         # 4. Restore the database from our backup file
         success = restore_database(backup_file)
         self.assertTrue(success)
 
         # 5. Verify that all the data has been correctly restored
-        self.assertEqual(self.session.query(Stock).count(), 1)
-        self.assertEqual(self.session.query(HistoricalPrice).count(), 5)
-        restored_stock = self.session.query(Stock).filter_by(symbol=self.test_symbol).first()
+        self.assertEqual(self.db.query(Stock).count(), 1)
+        self.assertEqual(self.db.query(HistoricalPrice).count(), 5)
+        restored_stock = self.db.query(Stock).filter_by(symbol=self.test_symbol).first()
         self.assertIsNotNone(restored_stock)
         self.assertEqual(restored_stock.name, "Test Company Inc.")
         

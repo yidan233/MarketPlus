@@ -12,15 +12,15 @@ logger = logging.getLogger(__name__)
 # Use DATABASE_URL directly instead of parsed individual variables
 def get_database_url():
     from app.config import DATABASE_URL
+    logger.info(f"🔍 DATABASE_URL from config: {'SET' if DATABASE_URL else 'NOT SET'}")
+    
     if DATABASE_URL:
+        logger.info(f"✅ Using DATABASE_URL: {DATABASE_URL[:20]}...")  # Show first 20 chars
         return DATABASE_URL
     else:
-        # Fallback to individual variables only if DATABASE_URL is missing
-        from app.config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
-        if DB_PASSWORD:
-            return f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-        else:
-            return "sqlite:///./stock_screener.db"
+        # No fallback - DATABASE_URL must be set
+        logger.error("❌ DATABASE_URL is required but not set!")
+        raise ValueError("DATABASE_URL environment variable is required")
 
 # Create engine lazily - only when needed
 def get_engine():
@@ -44,13 +44,18 @@ def get_session_maker():
     return sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+# Don't initialize SessionLocal at import time - make it lazy-loaded
 SessionLocal = None
 
-def get_db():
+def get_session_local():
     global SessionLocal
     if SessionLocal is None:
         SessionLocal = get_session_maker()
-    db = SessionLocal()
+    return SessionLocal
+
+# Update the functions to use get_session_local()
+def get_db():
+    db = get_session_local()()
     try:
         yield db
     finally:
@@ -58,10 +63,7 @@ def get_db():
 
 @contextmanager
 def get_db_session():
-    global SessionLocal
-    if SessionLocal is None:
-        SessionLocal = get_session_maker()
-    db = SessionLocal()
+    db = get_session_local()()
     try:
         yield db
         db.commit()

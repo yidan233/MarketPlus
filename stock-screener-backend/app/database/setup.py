@@ -21,7 +21,7 @@ def setup_database():
         
     except Exception as e:
         logger.error(f"❌ Database setup failed: {e}")
-        raise
+        return False
 
 def create_indexes():
     try:

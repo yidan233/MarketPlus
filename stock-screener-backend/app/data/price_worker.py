@@ -1,21 +1,19 @@
 import time
-from app.database.connection import SessionLocal
+from app.database import get_db_session
 from app.database.models import Stock
 from app.data.yfinance_fetcher import _fetch_fresh_data
-from app.data.redis_cache import set_price
+from app.data.redis_cache import set_stock_data, get_stock_data
 import logging
 logger = logging.getLogger(__name__)
 
 
 REFRESH_INTERVAL = 300
 
-def get_all_symbols(): # get all symbol from database 
-    session = SessionLocal()
-    try:
-        symbols = [stock.symbol for stock in session.query(Stock.symbol).all()]
+def get_all_symbols():
+    # Use get_db_session context manager instead of direct SessionLocal call
+    with get_db_session() as session:
+        symbols = [stock.symbol for stock in session.query(Stock).all()]
         return symbols
-    finally:
-        session.close()
 
 def fetch_and_cache_prices():
     symbols = get_all_symbols()
@@ -29,7 +27,7 @@ def fetch_and_cache_prices():
             hist = data.get('historical')
             if hist is not None and not hist.empty:
                 latest_price = hist['Close'].iloc[-1]
-                set_price(symbol, latest_price)
+                set_stock_data(symbol, latest_price)
                 logger.info(f"Updated Redis: {symbol} = {latest_price}")
             else:
                 logger.info(f"No historical data for {symbol}")

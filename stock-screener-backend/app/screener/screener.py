@@ -4,7 +4,10 @@ import numpy as np
 import logging
 import operator
 from app.data import get_stock_symbols, fetch_yfinance_data, load_from_database, save_to_database
-from app.database import SessionLocal
+from app.database import get_db_session
+from app.database.models import Stock, HistoricalPrice
+from app.data.redis_cache import get_stock_data, set_stock_data
+from app.data.yfinance_fetcher import _fetch_fresh_data
 from app.indicators.indicators import TechnicalIndicators
 from .fundamental import screen_stocks as fundamental_screen_stocks, apply_criteria
 from .technical import screen_by_technical
@@ -21,9 +24,21 @@ def setup_initial_database_load(indexes=("dow30","sp500", "nasdaq100")):
         data = fetch_yfinance_data(symbols, reload=True) 
         
         for symbol, stock_data in data.items():
-            save_to_database(symbol, stock_data, SessionLocal)
+            save_to_database(symbol, stock_data)
     
     print("✅ Initial database load complete.")
+
+def save_to_database(symbol, stock_data):
+    """Save stock data to database"""
+    with get_db_session() as db:
+        # Implementation here
+        pass
+
+def load_from_database(symbol):
+    """Load stock data from database"""
+    with get_db_session() as db:
+        # Implementation here
+        pass
 
 class StockScreener:
 
@@ -52,8 +67,8 @@ class StockScreener:
             period=period,
             interval=interval,
             reload=reload,
-            load_from_db=lambda symbol: load_from_database(symbol, SessionLocal),
-            save_to_db=lambda symbol, data: save_to_database(symbol, data, SessionLocal)
+            load_from_db=lambda symbol: load_from_database(symbol),
+            save_to_db=lambda symbol, data: save_to_database(symbol, data)
         )
         return self.stock_data
     

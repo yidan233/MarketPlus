@@ -3,8 +3,9 @@ import logging
 import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
-from app.database import SessionLocal
-from app.database.models import NewsArticle
+from app.database import get_db_session
+from app.database.models import NewsArticle, Stock, HistoricalPrice
+from app.data.redis_cache import get_stock_data, set_stock_data
 
 logger = logging.getLogger(__name__)
 
@@ -19,31 +20,31 @@ class NewsService:
         """Get market news from database cache"""
         try:
             # Check if we have recent news in database
-            db = SessionLocal()
-            try:
-                # Get news from last 24 hours
-                yesterday = datetime.utcnow() - timedelta(days=1)
-                cached_news = db.query(NewsArticle)\
-                    .filter(NewsArticle.news_type == 'market')\
-                    .filter(NewsArticle.created_at >= yesterday)\
-                    .order_by(NewsArticle.created_at.desc())\
-                    .limit(limit)\
-                    .all()
-                
-                if cached_news:
-                    logger.info(f"Returning {len(cached_news)} cached market news articles")
-                    return [article.to_dict() for article in cached_news]
-                
-                # No cached news, fetch from API (but check daily limit)
-                if self._can_make_api_call():
-                    logger.info("No cached market news found, fetching from API")
-                    return self._fetch_and_cache_all_news(limit)
-                else:
-                    logger.warning("Daily API limit reached, returning empty results")
-                    return []
-                
-            finally:
-                db.close()
+            with get_db_session() as db:
+                try:
+                    # Get news from last 24 hours
+                    yesterday = datetime.utcnow() - timedelta(days=1)
+                    cached_news = db.query(NewsArticle)\
+                        .filter(NewsArticle.news_type == 'market')\
+                        .filter(NewsArticle.created_at >= yesterday)\
+                        .order_by(NewsArticle.created_at.desc())\
+                        .limit(limit)\
+                        .all()
+                    
+                    if cached_news:
+                        logger.info(f"Returning {len(cached_news)} cached market news articles")
+                        return [article.to_dict() for article in cached_news]
+                    
+                    # No cached news, fetch from API (but check daily limit)
+                    if self._can_make_api_call():
+                        logger.info("No cached market news found, fetching from API")
+                        return self._fetch_and_cache_all_news(limit)
+                    else:
+                        logger.warning("Daily API limit reached, returning empty results")
+                        return []
+                    
+                finally:
+                    db.close()
                 
         except Exception as e:
             logger.error(f"Error getting market news: {e}")
@@ -52,31 +53,31 @@ class NewsService:
     def get_top_headlines(self, limit: int = 10) -> List[Dict]:
         """Get top headlines from database cache"""
         try:
-            db = SessionLocal()
-            try:
-                # Get news from last 24 hours
-                yesterday = datetime.utcnow() - timedelta(days=1)
-                cached_news = db.query(NewsArticle)\
-                    .filter(NewsArticle.news_type == 'headlines')\
-                    .filter(NewsArticle.created_at >= yesterday)\
-                    .order_by(NewsArticle.created_at.desc())\
-                    .limit(limit)\
-                    .all()
-                
-                if cached_news:
-                    logger.info(f"Returning {len(cached_news)} cached headline articles")
-                    return [article.to_dict() for article in cached_news]
-                
-                # No cached news, fetch from API (but check daily limit)
-                if self._can_make_api_call():
-                    logger.info("No cached headlines found, fetching from API")
-                    return self._fetch_and_cache_all_news(limit)
-                else:
-                    logger.warning("Daily API limit reached, returning empty results")
-                    return []
-                
-            finally:
-                db.close()
+            with get_db_session() as db:
+                try:
+                    # Get news from last 24 hours
+                    yesterday = datetime.utcnow() - timedelta(days=1)
+                    cached_news = db.query(NewsArticle)\
+                        .filter(NewsArticle.news_type == 'headlines')\
+                        .filter(NewsArticle.created_at >= yesterday)\
+                        .order_by(NewsArticle.created_at.desc())\
+                        .limit(limit)\
+                        .all()
+                    
+                    if cached_news:
+                        logger.info(f"Returning {len(cached_news)} cached headline articles")
+                        return [article.to_dict() for article in cached_news]
+                    
+                    # No cached news, fetch from API (but check daily limit)
+                    if self._can_make_api_call():
+                        logger.info("No cached headlines found, fetching from API")
+                        return self._fetch_and_cache_all_news(limit)
+                    else:
+                        logger.warning("Daily API limit reached, returning empty results")
+                        return []
+                    
+                finally:
+                    db.close()
                 
         except Exception as e:
             logger.error(f"Error getting top headlines: {e}")
@@ -133,35 +134,35 @@ class NewsService:
     
     def _cache_news(self, news_list: List[Dict], news_type: str):
         try:
-            db = SessionLocal()
-            try:
-                for article in news_list:
-                    existing = db.query(NewsArticle)\
-                        .filter(NewsArticle.url == article['url'])\
-                        .first()
+            with get_db_session() as db:
+                try:
+                    for article in news_list:
+                        existing = db.query(NewsArticle)\
+                            .filter(NewsArticle.url == article['url'])\
+                            .first()
+                        
+                        if not existing:
+                            news_article = NewsArticle(
+                                title=article['title'],
+                                summary=article['summary'],
+                                url=article['url'],
+                                published_at=article['published_at'],
+                                source=article['source'],
+                                sentiment=article['sentiment'],
+                                tickers=json.dumps(article['tickers']),
+                                news_type=news_type
+                            )
+                            db.add(news_article)
                     
-                    if not existing:
-                        news_article = NewsArticle(
-                            title=article['title'],
-                            summary=article['summary'],
-                            url=article['url'],
-                            published_at=article['published_at'],
-                            source=article['source'],
-                            sentiment=article['sentiment'],
-                            tickers=json.dumps(article['tickers']),
-                            news_type=news_type
-                        )
-                        db.add(news_article)
-                
-                db.commit()
-                logger.info(f"Cached {len(news_list)} {news_type} articles")
-                
-            except Exception as e:
-                db.rollback()
-                logger.error(f"Error caching news: {e}")
-            finally:
-                db.close()
-                
+                    db.commit()
+                    logger.info(f"Cached {len(news_list)} {news_type} articles")
+                    
+                except Exception as e:
+                    db.rollback()
+                    logger.error(f"Error caching news: {e}")
+                finally:
+                    db.close()
+                    
         except Exception as e:
             logger.error(f"Error in cache_news: {e}")
     
@@ -183,35 +184,35 @@ class NewsService:
     def get_cache_status(self) -> Dict:
         """Get information about cached news and API usage"""
         try:
-            db = SessionLocal()
-            try:
-                yesterday = datetime.utcnow() - timedelta(days=1)
-                
-                market_count = db.query(NewsArticle)\
-                    .filter(NewsArticle.news_type == 'market')\
-                    .filter(NewsArticle.created_at >= yesterday)\
-                    .count()
-                
-                headlines_count = db.query(NewsArticle)\
-                    .filter(NewsArticle.news_type == 'headlines')\
-                    .filter(NewsArticle.created_at >= yesterday)\
-                    .count()
-                
-                latest_article = db.query(NewsArticle)\
-                    .order_by(NewsArticle.created_at.desc())\
-                    .first()
-                
-                return {
-                    'market_articles': market_count,
-                    'headlines_articles': headlines_count,
-                    'last_updated': latest_article.created_at.isoformat() if latest_article else None,
-                    'cache_age_hours': (datetime.utcnow() - latest_article.created_at).total_seconds() / 3600 if latest_article else None,
-                    'daily_api_calls_used': self.daily_api_calls,
-                    'daily_api_calls_remaining': 25 - self.daily_api_calls,
-                    'can_make_api_call': self._can_make_api_call()
-                }
-            finally:
-                db.close()
+            with get_db_session() as db:
+                try:
+                    yesterday = datetime.utcnow() - timedelta(days=1)
+                    
+                    market_count = db.query(NewsArticle)\
+                        .filter(NewsArticle.news_type == 'market')\
+                        .filter(NewsArticle.created_at >= yesterday)\
+                        .count()
+                    
+                    headlines_count = db.query(NewsArticle)\
+                        .filter(NewsArticle.news_type == 'headlines')\
+                        .filter(NewsArticle.created_at >= yesterday)\
+                        .count()
+                    
+                    latest_article = db.query(NewsArticle)\
+                        .order_by(NewsArticle.created_at.desc())\
+                        .first()
+                    
+                    return {
+                        'market_articles': market_count,
+                        'headlines_articles': headlines_count,
+                        'last_updated': latest_article.created_at.isoformat() if latest_article else None,
+                        'cache_age_hours': (datetime.utcnow() - latest_article.created_at).total_seconds() / 3600 if latest_article else None,
+                        'daily_api_calls_used': self.daily_api_calls,
+                        'daily_api_calls_remaining': 25 - self.daily_api_calls,
+                        'can_make_api_call': self._can_make_api_call()
+                    }
+                finally:
+                    db.close()
         except Exception as e:
             logger.error(f"Error getting cache status: {e}")
             return {}

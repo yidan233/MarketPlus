@@ -3,10 +3,11 @@ import time
 import json
 import logging
 from datetime import datetime, timedelta
-from app.database import SessionLocal
-from app.database.models import Watchlist, User, WatchlistMatch, Stock
+from app.database import get_db_session
+from app.database.models import Watchlist, User, WatchlistMatch, Stock, HistoricalPrice
 from app.screener import StockScreener, screen_stocks, screen_by_technical
 from app.data import get_stock_symbols
+from app.data.redis_cache import get_stock_data, set_stock_data
 from app.services.email_service import send_watchlist_alert
 
 logger = logging.getLogger(__name__)
@@ -59,12 +60,12 @@ class WatchlistMonitor:
                 self.send_email_alert(watchlist, results)
             
             # Update last checked time
-            db = SessionLocal()
-            try:
-                watchlist.last_checked = datetime.utcnow()
-                db.commit()
-            finally:
-                db.close()
+            with get_db_session() as db:
+                try:
+                    watchlist.last_checked = datetime.utcnow()
+                    db.commit()
+                finally:
+                    db.close()
             
             logger.info(f"Watchlist {watchlist.name}: Found {len(results)} matching stocks")
             return results
@@ -76,46 +77,46 @@ class WatchlistMonitor:
     def update_watchlist_matches(self, watchlist, current_results):
         """Update watchlist matches - only store symbol references"""
         try:
-            db = SessionLocal()
-            
-            # Get current matching symbols
-            current_matching_symbols = {stock['symbol'] for stock in current_results}
-            
-            # Get existing matches for this watchlist
-            existing_matches = db.query(WatchlistMatch).filter_by(
-                watchlist_id=watchlist.id
-            ).all()
-            
-            # Remove matches that no longer match criteria
-            for existing_match in existing_matches:
-                if existing_match.symbol not in current_matching_symbols:
-                    db.delete(existing_match)
-                    logger.info(f"Removed non-matching stock: {existing_match.symbol}")
-            
-            # Add new matches (only symbol references)
-            for stock in current_results:
-                # Check if match already exists
-                existing_match = db.query(WatchlistMatch).filter_by(
-                    watchlist_id=watchlist.id,
-                    symbol=stock['symbol']
-                ).first()
+            with get_db_session() as db:
                 
-                if not existing_match:
-                    # Create new match record (just symbol reference)
-                    match = WatchlistMatch(
+                # Get current matching symbols
+                current_matching_symbols = {stock['symbol'] for stock in current_results}
+                
+                # Get existing matches for this watchlist
+                existing_matches = db.query(WatchlistMatch).filter_by(
+                    watchlist_id=watchlist.id
+                ).all()
+                
+                # Remove matches that no longer match criteria
+                for existing_match in existing_matches:
+                    if existing_match.symbol not in current_matching_symbols:
+                        db.delete(existing_match)
+                        logger.info(f"Removed non-matching stock: {existing_match.symbol}")
+                
+                # Add new matches (only symbol references)
+                for stock in current_results:
+                    # Check if match already exists
+                    existing_match = db.query(WatchlistMatch).filter_by(
                         watchlist_id=watchlist.id,
-                        symbol=stock['symbol'],
-                        matched_criteria=json.dumps({
-                            'fundamental_criteria': json.loads(watchlist.criteria).get('fundamental_criteria', []),
-                            'technical_criteria': json.loads(watchlist.criteria).get('technical_criteria', [])
-                        })
-                    )
-                    db.add(match)
-                    logger.info(f"Added new match: {stock['symbol']}")
-            
-            db.commit()
-            logger.info(f"Updated watchlist {watchlist.name}: {len(current_results)} current matches")
-            
+                        symbol=stock['symbol']
+                    ).first()
+                    
+                    if not existing_match:
+                        # Create new match record (just symbol reference)
+                        match = WatchlistMatch(
+                            watchlist_id=watchlist.id,
+                            symbol=stock['symbol'],
+                            matched_criteria=json.dumps({
+                                'fundamental_criteria': json.loads(watchlist.criteria).get('fundamental_criteria', []),
+                                'technical_criteria': json.loads(watchlist.criteria).get('technical_criteria', [])
+                            })
+                        )
+                        db.add(match)
+                        logger.info(f"Added new match: {stock['symbol']}")
+                
+                db.commit()
+                logger.info(f"Updated watchlist {watchlist.name}: {len(current_results)} current matches")
+                
         except Exception as e:
             logger.error(f"Error updating watchlist matches: {e}")
             db.rollback()
@@ -139,23 +140,23 @@ class WatchlistMonitor:
     
     def check_all_watchlists(self):
         """Check all active and monitoring watchlists"""
-        db = SessionLocal()
-        try:
-            watchlists = db.query(Watchlist).filter(
-                Watchlist.is_active == True,
-                Watchlist.is_monitoring == True
-            ).all()
-            
-            logger.info(f"Checking {len(watchlists)} active watchlists")
-            
-            for watchlist in watchlists:
-                try:
-                    self.check_watchlist(watchlist)
-                except Exception as e:
-                    logger.error(f"Error checking watchlist {watchlist.id}: {e}")
-                    
-        finally:
-            db.close()
+        with get_db_session() as db:
+            try:
+                watchlists = db.query(Watchlist).filter(
+                    Watchlist.is_active == True,
+                    Watchlist.is_monitoring == True
+                ).all()
+                
+                logger.info(f"Checking {len(watchlists)} active watchlists")
+                
+                for watchlist in watchlists:
+                    try:
+                        self.check_watchlist(watchlist)
+                    except Exception as e:
+                        logger.error(f"Error checking watchlist {watchlist.id}: {e}")
+                        
+            finally:
+                db.close()
     
     def should_send_alert(self, watchlist):
         """Check if we should send an email alert"""
@@ -165,40 +166,40 @@ class WatchlistMonitor:
     def send_email_alert(self, watchlist, matches):
         """Send email alert for watchlist matches"""
         try:
-            db = SessionLocal()
-            user = db.query(User).filter_by(id=watchlist.user_id).first()
-            
-            if not user or not user.email:
-                logger.warning(f"No email found for user {watchlist.user_id}")
-                return
-            
-            # Convert matches to email format
-            email_matches = []
-            for match in matches:
-                stock = db.query(Stock).filter_by(symbol=match['symbol']).first()
-                email_matches.append({
-                    'symbol': match['symbol'],
-                    'price': stock.current_price if stock else match.get('price', 0),
-                    'sector': stock.sector if stock else match.get('sector', 'N/A'),
-                    'name': stock.name if stock else match.get('name', 'N/A')
-                })
-            
-            # Send email
-            success = send_watchlist_alert(
-                user_email=user.email,
-                username=user.username,
-                watchlist_name=watchlist.name,
-                matches=email_matches
-            )
-            
-            if success:
-                # Update last alert sent time
-                watchlist.last_alert_sent = datetime.utcnow()
-                db.commit()
-                logger.info(f"Email alert sent for watchlist {watchlist.name}")
-            else:
-                logger.error(f"Failed to send email alert for watchlist {watchlist.name}")
+            with get_db_session() as db:
+                user = db.query(User).filter_by(id=watchlist.user_id).first()
                 
+                if not user or not user.email:
+                    logger.warning(f"No email found for user {watchlist.user_id}")
+                    return
+                
+                # Convert matches to email format
+                email_matches = []
+                for match in matches:
+                    stock = db.query(Stock).filter_by(symbol=match['symbol']).first()
+                    email_matches.append({
+                        'symbol': match['symbol'],
+                        'price': stock.current_price if stock else match.get('price', 0),
+                        'sector': stock.sector if stock else match.get('sector', 'N/A'),
+                        'name': stock.name if stock else match.get('name', 'N/A')
+                    })
+                
+                # Send email
+                success = send_watchlist_alert(
+                    user_email=user.email,
+                    username=user.username,
+                    watchlist_name=watchlist.name,
+                    matches=email_matches
+                )
+                
+                if success:
+                    # Update last alert sent time
+                    watchlist.last_alert_sent = datetime.utcnow()
+                    db.commit()
+                    logger.info(f"Email alert sent for watchlist {watchlist.name}")
+                else:
+                    logger.error(f"Failed to send email alert for watchlist {watchlist.name}")
+                    
         except Exception as e:
             logger.error(f"Error sending email alert: {e}")
         finally:

@@ -1,13 +1,12 @@
 from flask import Blueprint, request, jsonify
+from app.database import get_db_session
+from app.database.models import Stock, HistoricalPrice, ScreeningResult
 from app.screener import StockScreener, screen_stocks, screen_by_technical, create_combined_screen
-from app.data import get_stock_symbols
-from app.cli import parse_criteria
-import logging
+from app.data.redis_cache import get_stock_data, set_stock_data, get_price
+from app.data.yfinance_fetcher import _fetch_fresh_data
 from app.data.db_utils import load_from_database
-from app.database import SessionLocal
-from app.data.redis_cache import get_price
 from app.services.chatbot_service import chatbot
-
+import logging
 
 logging.basicConfig(
     level=logging.ERROR,

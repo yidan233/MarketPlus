@@ -53,40 +53,38 @@ def test_database_info_completeness():
     
     try:
         from app.database.models import Stock
-        from app.database import SessionLocal
+        from app.database import get_db_session
         
-        session = SessionLocal()
-        
-        test_symbols = ["ZTS", "AAPL", "MSFT", "GOOGL", "AMZN", "MAR", "ZBH"]
-        
-        for symbol in test_symbols:
-            stock = session.query(Stock).filter(Stock.symbol == symbol).first()
-            if stock:
-                print(f"\n📊 {symbol} database info:")
-                print(f"   Has info dict: {stock.info is not None}")
-                if stock.info:
-                    print(f"   Info dict keys: {list(stock.info.keys())}")
-                    print(f"   Info dict length: {len(stock.info)}")
-                    
-                    # Check for specific important fields
-                    important_fields = [
-                        'longBusinessSummary', 'profitMargins', 'sector', 'industry',
-                        'marketCap', 'currentPrice', 'trailingPE', 'grossProfits',
-                        'totalRevenue', 'revenueGrowth', 'earningsGrowth'
-                    ]
-                    for field in important_fields:
-                        has_field = field in stock.info
-                        value = stock.info.get(field, 'MISSING')
-                        if has_field and value is not None:
-                            print(f"   {field}: ✅ {value}")
-                        else:
-                            print(f"   {field}: ❌ MISSING")
+        with get_db_session() as session:
+            
+            test_symbols = ["ZTS", "AAPL", "MSFT", "GOOGL", "AMZN", "MAR", "ZBH"]
+            
+            for symbol in test_symbols:
+                stock = session.query(Stock).filter(Stock.symbol == symbol).first()
+                if stock:
+                    print(f"\n📊 {symbol} database info:")
+                    print(f"   Has info dict: {stock.info is not None}")
+                    if stock.info:
+                        print(f"   Info dict keys: {list(stock.info.keys())}")
+                        print(f"   Info dict length: {len(stock.info)}")
+                        
+                        # Check for specific important fields
+                        important_fields = [
+                            'longBusinessSummary', 'profitMargins', 'sector', 'industry',
+                            'marketCap', 'currentPrice', 'trailingPE', 'grossProfits',
+                            'totalRevenue', 'revenueGrowth', 'earningsGrowth'
+                        ]
+                        for field in important_fields:
+                            has_field = field in stock.info
+                            value = stock.info.get(field, 'MISSING')
+                            if has_field and value is not None:
+                                print(f"   {field}: ✅ {value}")
+                            else:
+                                print(f"   {field}: ❌ MISSING")
+                    else:
+                        print(f"   ❌ No info dict saved")
                 else:
-                    print(f"   ❌ No info dict saved")
-            else:
-                print(f"   ❌ {symbol} not found in database")
-        
-        session.close()
+                    print(f"   ❌ {symbol} not found in database")
         
     except Exception as e:
         print(f"❌ Error: {e}")
@@ -124,24 +122,22 @@ def test_yfinance_vs_database():
         print("   💾 Checking database...")
         try:
             from app.database.models import Stock
-            from app.database import SessionLocal
+            from app.database import get_db_session
             
-            session = SessionLocal()
-            stock = session.query(Stock).filter(Stock.symbol == symbol).first()
-            
-            if stock and stock.info:
-                print(f"   Database info fields: {len(stock.info)}")
-                for field in important_fields:
-                    has_field = field in stock.info
-                    value = stock.info.get(field, 'MISSING')
-                    if has_field and value is not None:
-                        print(f"   Database {field}: ✅ {value}")
-                    else:
-                        print(f"   Database {field}: ❌ MISSING")
-            else:
-                print(f"   ❌ No database data for {symbol}")
-            
-            session.close()
+            with get_db_session() as session:
+                stock = session.query(Stock).filter(Stock.symbol == symbol).first()
+                
+                if stock and stock.info:
+                    print(f"   Database info fields: {len(stock.info)}")
+                    for field in important_fields:
+                        has_field = field in stock.info
+                        value = stock.info.get(field, 'MISSING')
+                        if has_field and value is not None:
+                            print(f"   Database {field}: ✅ {value}")
+                        else:
+                            print(f"   Database {field}: ❌ MISSING")
+                else:
+                    print(f"   ❌ No database data for {symbol}")
             
         except Exception as e:
             print(f"   ❌ Database error: {e}")
@@ -258,30 +254,28 @@ def test_frontend_expected_fields():
     
     try:
         from app.database.models import Stock
-        from app.database import SessionLocal
+        from app.database import get_db_session
         
-        session = SessionLocal()
-        
-        test_symbols = ["ZTS", "AAPL", "MSFT", "MAR", "ZBH"]
-        
-        for symbol in test_symbols:
-            stock = session.query(Stock).filter(Stock.symbol == symbol).first()
-            if stock and stock.info:
-                print(f"\n📊 {symbol} frontend field availability:")
-                available_count = 0
-                for field in frontend_fields:
-                    has_field = field in stock.info and stock.info[field] is not None
-                    if has_field:
-                        available_count += 1
-                        print(f"   ✅ {field}")
-                    else:
-                        print(f"   ❌ {field}")
-                
-                print(f"   📈 Coverage: {available_count}/{len(frontend_fields)} ({available_count/len(frontend_fields)*100:.1f}%)")
-            else:
-                print(f"\n❌ {symbol}: No database data available")
-        
-        session.close()
+        with get_db_session() as session:
+            
+            test_symbols = ["ZTS", "AAPL", "MSFT", "MAR", "ZBH"]
+            
+            for symbol in test_symbols:
+                stock = session.query(Stock).filter(Stock.symbol == symbol).first()
+                if stock and stock.info:
+                    print(f"\n📊 {symbol} frontend field availability:")
+                    available_count = 0
+                    for field in frontend_fields:
+                        has_field = field in stock.info and stock.info[field] is not None
+                        if has_field:
+                            available_count += 1
+                            print(f"   ✅ {field}")
+                        else:
+                            print(f"   ❌ {field}")
+                    
+                    print(f"   📈 Coverage: {available_count}/{len(frontend_fields)} ({available_count/len(frontend_fields)*100:.1f}%)")
+                else:
+                    print(f"\n❌ {symbol}: No database data available")
         
     except Exception as e:
         print(f"❌ Error: {e}")

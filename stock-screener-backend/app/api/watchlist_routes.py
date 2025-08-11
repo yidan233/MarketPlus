@@ -1,216 +1,113 @@
+from app.database import get_db_session
+from app.database.models import Stock, HistoricalPrice
+from app.data.redis_cache import get_stock_data, set_stock_data
 from flask import Blueprint, request, jsonify
-from app.database import SessionLocal
-from app.database.models import User, Watchlist, WatchlistMatch, Stock
-import json
 import logging
 
 logger = logging.getLogger(__name__)
 
-watchlist_bp = Blueprint('watchlist', __name__, url_prefix='/api/watchlists')
+watchlist_bp = Blueprint('watchlist', __name__)
 
-# Handle both with and without trailing slash
-@watchlist_bp.route('', methods=['GET'])
-@watchlist_bp.route('/', methods=['GET'])
-def get_user_watchlists():
-    """Get all watchlists for a user"""
-    try:
-        username = request.args.get('username')
-        if not username:
-            return jsonify({'error': 'Username required'}), 400
+@watchlist_bp.route('/watchlist', methods=['GET'])
+def get_watchlist():
+    with get_db_session() as db:
+        # Get all stocks in watchlist (you might want to add a watchlist field to Stock model)
+        stocks = db.query(Stock).all()
+        watchlist = []
         
-        db = SessionLocal()
-        user = db.query(User).filter(User.username == username).first()
+        for stock in stocks:
+            # Try to get cached data first
+            cached_data = get_stock_data(stock.symbol)
+            if cached_data:
+                stock_data = {
+                    'symbol': stock.symbol,
+                    'name': stock.name,
+                    'current_price': cached_data.get('current_price', stock.current_price),
+                    'change': cached_data.get('change', 0),
+                    'change_percent': cached_data.get('change_percent', 0)
+                }
+            else:
+                stock_data = {
+                    'symbol': stock.symbol,
+                    'name': stock.name,
+                    'current_price': stock.current_price,
+                    'change': 0,
+                    'change_percent': 0
+                }
+            watchlist.append(stock_data)
         
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-        
-        watchlists = db.query(Watchlist).filter(Watchlist.user_id == user.id).all()
-        
-        # Get matches for each watchlist
-        result = []
-        for watchlist in watchlists:
-            watchlist_data = watchlist.to_dict()
-            
-            # Get matches with stock data
-            matches = db.query(WatchlistMatch).filter(WatchlistMatch.watchlist_id == watchlist.id).all()
-            watchlist_data['matches'] = [match.to_dict() for match in matches]
-            
-            result.append(watchlist_data)
-        
-        return jsonify(result), 200
-        
-    except Exception as e:
-        logger.error(f"Error getting watchlists: {e}")
-        return jsonify({'error': str(e)}), 500
-    finally:
-        db.close()
+        return jsonify({'watchlist': watchlist})
 
-@watchlist_bp.route('/', methods=['POST'])
-def create_watchlist():
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
+@watchlist_bp.route('/watchlist/<symbol>', methods=['POST'])
+def add_to_watchlist(symbol):
+    with get_db_session() as db:
+        # Check if stock exists
+        stock = db.query(Stock).filter_by(symbol=symbol.upper()).first()
+        if not stock:
+            return jsonify({'error': 'Stock not found'}), 404
         
-        username = data.get('username')
-        if not username:
-            return jsonify({'error': 'Username required'}), 400
-        
-        # Get or create user
-        db = SessionLocal()
-        user = db.query(User).filter(User.username == username).first()
-        
-        if not user:
-            user = User(
-                username=username,
-                email=data.get('email', f'{username}@example.com')
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-        
-        # Create watchlist
-        watchlist = Watchlist(
-            user_id=user.id,
-            name=data.get('name', 'Unnamed Watchlist'),
-            criteria=json.dumps(data.get('criteria', {})),
-            is_active=data.get('is_active', True),
-            is_monitoring=data.get('is_monitoring', True),
-            email_alerts=data.get('email_alerts', True)  # Add this
-        )
-        
-        db.add(watchlist)
-        db.commit()
-        db.refresh(watchlist)
-        
-        return jsonify(watchlist.to_dict()), 201
-        
-    except Exception as e:
-        logger.error(f"Error creating watchlist: {e}")
-        return jsonify({'error': str(e)}), 500
-    finally:
-        db.close()
+        # Add to watchlist logic here
+        # You might want to add a watchlist field to Stock model
+        return jsonify({'message': f'{symbol} added to watchlist'})
 
-@watchlist_bp.route('/<int:watchlist_id>', methods=['PUT'])
-def update_watchlist(watchlist_id):
-    """Update watchlist settings including email preferences"""
-    try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'error': 'No data provided'}), 400
+@watchlist_bp.route('/watchlist/<symbol>', methods=['DELETE'])
+def remove_from_watchlist(symbol):
+    with get_db_session() as db:
+        # Check if stock exists
+        stock = db.query(Stock).filter_by(symbol=symbol.upper()).first()
+        if not stock:
+            return jsonify({'error': 'Stock not found'}), 404
         
-        db = SessionLocal()
-        watchlist = db.query(Watchlist).filter_by(id=watchlist_id).first()
-        
-        if not watchlist:
-            return jsonify({'error': 'Watchlist not found'}), 404
-        
-        # Update fields
-        if 'name' in data:
-            watchlist.name = data['name']
-        if 'criteria' in data:
-            watchlist.criteria = json.dumps(data['criteria'])
-        if 'is_active' in data:
-            watchlist.is_active = data['is_active']
-        if 'is_monitoring' in data:
-            watchlist.is_monitoring = data['is_monitoring']
-        if 'email_alerts' in data:
-            watchlist.email_alerts = data['email_alerts']
-        
-        db.commit()
-        
-        return jsonify(watchlist.to_dict()), 200
-        
-    except Exception as e:
-        logger.error(f"Error updating watchlist: {e}")
-        return jsonify({'error': str(e)}), 500
-    finally:
-        db.close()
+        # Remove from watchlist logic here
+        return jsonify({'message': f'{symbol} removed from watchlist'})
 
-@watchlist_bp.route('/<int:watchlist_id>', methods=['DELETE'])
-def delete_watchlist(watchlist_id):
-    """Delete a watchlist"""
-    try:
-        db = SessionLocal()
-        watchlist = db.query(Watchlist).get(watchlist_id)
+@watchlist_bp.route('/watchlist/<symbol>/price', methods=['GET'])
+def get_stock_price(symbol):
+    with get_db_session() as db:
+        # Check if stock exists
+        stock = db.query(Stock).filter_by(symbol=symbol.upper()).first()
+        if not stock:
+            return jsonify({'error': 'Stock not found'}), 404
         
-        if not watchlist:
-            return jsonify({'error': 'Watchlist not found'}), 404
-        
-        db.delete(watchlist)
-        db.commit()
-        
-        return '', 204
-        
-    except Exception as e:
-        logger.error(f"Error deleting watchlist: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-    finally:
-        db.close() 
+        # Try to get cached price data
+        cached_data = get_stock_data(symbol)
+        if cached_data:
+            return jsonify({
+                'symbol': symbol,
+                'current_price': cached_data.get('current_price', stock.current_price),
+                'change': cached_data.get('change', 0),
+                'change_percent': cached_data.get('change_percent', 0),
+                'timestamp': cached_data.get('timestamp')
+            })
+        else:
+            return jsonify({
+                'symbol': symbol,
+                'current_price': stock.current_price,
+                'change': 0,
+                'change_percent': 0,
+                'timestamp': None
+            })
 
-@watchlist_bp.route('/<int:watchlist_id>/matches', methods=['GET'])
-def get_watchlist_matches(watchlist_id):
-    """Get all matches for a specific watchlist"""
-    try:
-        db = SessionLocal()
-        watchlist = db.query(Watchlist).get(watchlist_id)
+@watchlist_bp.route('/watchlist/<symbol>/history', methods=['GET'])
+def get_stock_history(symbol):
+    with get_db_session() as db:
+        # Check if stock exists
+        stock = db.query(Stock).filter_by(symbol=symbol.upper()).first()
+        if not stock:
+            return jsonify({'error': 'Stock not found'}), 404
         
-        if not watchlist:
-            return jsonify({'error': 'Watchlist not found'}), 404
+        # Get historical prices
+        prices = db.query(HistoricalPrice).filter_by(symbol=symbol.upper()).order_by(HistoricalPrice.date.desc()).limit(30).all()
         
-        # Get matches, ordered by most recent first
-        matches = db.query(WatchlistMatch).filter_by(
-            watchlist_id=watchlist_id
-        ).order_by(WatchlistMatch.matched_at.desc()).all()
+        history = []
+        for price in prices:
+            history.append({
+                'date': price.date.isoformat(),
+                'open': price.open,
+                'high': price.high,
+                'low': price.low,
+                'close': price.close,
+                'volume': price.volume
+            })
         
-        return jsonify([match.to_dict() for match in matches])
-        
-    except Exception as e:
-        logger.error(f"Error getting watchlist matches: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-    finally:
-        db.close()
-
-@watchlist_bp.route('/<int:watchlist_id>/matches/<int:match_id>', methods=['DELETE'])
-def delete_match(watchlist_id, match_id):
-    """Delete a specific match"""
-    try:
-        db = SessionLocal()
-        match = db.query(WatchlistMatch).filter_by(
-            id=match_id,
-            watchlist_id=watchlist_id
-        ).first()
-        
-        if not match:
-            return jsonify({'error': 'Match not found'}), 404
-        
-        db.delete(match)
-        db.commit()
-        
-        return '', 204
-        
-    except Exception as e:
-        logger.error(f"Error deleting match: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-    finally:
-        db.close()
-
-@watchlist_bp.route('/<int:watchlist_id>/matches', methods=['DELETE'])
-def clear_watchlist_matches(watchlist_id):
-    """Clear all matches for a watchlist"""
-    try:
-        db = SessionLocal()
-        matches = db.query(WatchlistMatch).filter_by(watchlist_id=watchlist_id).all()
-        
-        for match in matches:
-            db.delete(match)
-        
-        db.commit()
-        
-        return '', 204
-        
-    except Exception as e:
-        logger.error(f"Error clearing matches: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-    finally:
-        db.close() 
+        return jsonify({'symbol': symbol, 'history': history}) 

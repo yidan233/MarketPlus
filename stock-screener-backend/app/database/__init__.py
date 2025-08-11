@@ -1,6 +1,6 @@
 
 
-from .connection import get_db, get_db_session, get_engine, test_connection
+from .connection import get_db, get_db_session, get_engine, test_connection, SessionLocal
 from .models import Base, Stock, HistoricalPrice, ScreeningResult
 from .setup import setup_database, validate_database
 from .utils import (
@@ -18,6 +18,7 @@ __all__ = [
     'get_db_session',
     'get_engine',
     'test_connection',
+    'SessionLocal',
 
     # Models
     'Base',
