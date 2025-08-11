@@ -7,9 +7,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-REFRESH_INTERVAL = 60
+REFRESH_INTERVAL = 300
 
-def get_all_symbols():
+def get_all_symbols(): # get all symbol from database 
     session = SessionLocal()
     try:
         symbols = [stock.symbol for stock in session.query(Stock.symbol).all()]
@@ -22,7 +22,6 @@ def fetch_and_cache_prices():
     if not symbols:
         logger.info("No symbols found in database.")
         return
-    logger.info(f"Fetching prices for {len(symbols)} symbols...")
 
     fresh_data = _fetch_fresh_data(symbols, period="1d", interval="1m")
     for symbol, data in fresh_data.items():

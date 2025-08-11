@@ -1,0 +1,10 @@
+ first go to frontend:
+ npm run dev 
+ Then go to backend 
+ start env 
+ source venv/bin/activate
+python -m app.amin --mode api 
+
+
+# TODO:
+UPDGRADE: CACHE for all historical pice in redis 

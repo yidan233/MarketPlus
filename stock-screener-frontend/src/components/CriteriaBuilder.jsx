@@ -104,10 +104,17 @@ export default function CriteriaBuilder({ type, criteria, setCriteria }) {
   const FIELDS = type === 'fundamental' ? FUNDAMENTAL_FIELDS : TECHNICAL_FIELDS
 
   const handleChange = (idx, key, value) => {
-    const updated = criteria.map((c, i) =>
-      i === idx ? { ...c, [key]: value } : c
-    )
-    setCriteria(updated)
+    const updated = criteria.map((c, i) => {
+      if (i === idx) {
+        const newCriteria = { ...c, [key]: value };
+        if (key === 'field' && VALUE_OPTIONS[value]) {
+          newCriteria.operator = '==';
+        }
+        return newCriteria;
+      }
+      return c;
+    });
+    setCriteria(updated);
   }
 
   const addRow = () => setCriteria([...criteria, { field: '', operator: '', value: '' }])
@@ -124,7 +131,7 @@ export default function CriteriaBuilder({ type, criteria, setCriteria }) {
             {FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
           </select>
 
-          <select value={c.operator} onChange={e => handleChange(idx, 'operator', e.target.value)}>
+          <select value={c.operator} onChange={e => handleChange(idx, 'operator', e.target.value)} disabled={VALUE_OPTIONS[c.field]}>
             <option value="">Op</option>
             {OPERATORS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>

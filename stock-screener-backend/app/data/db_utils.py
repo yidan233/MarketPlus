@@ -11,151 +11,123 @@ logger = logging.getLogger(__name__)
 def load_from_database(symbol, session_factory, max_age_days=7):
     session = session_factory()
     try:
-        # make sure not expired 
         cutoff_date = datetime.now().date() - timedelta(days=max_age_days)
-        recent_count = session.query(HistoricalPrice)\
-            .filter(HistoricalPrice.symbol == symbol)\
-            .filter(HistoricalPrice.date >= cutoff_date)\
+        recent_count = (
+            session.query(HistoricalPrice)
+            .filter(HistoricalPrice.symbol == symbol,
+                    HistoricalPrice.date >= cutoff_date)
             .count()
-        
+        )
         if recent_count < 1:
             return None
-        
-        historical_prices = session.query(HistoricalPrice)\
-            .filter(HistoricalPrice.symbol == symbol)\
-            .order_by(HistoricalPrice.date)\
+
+        rows = (
+            session.query(HistoricalPrice)
+            .filter(HistoricalPrice.symbol == symbol)
+            .order_by(HistoricalPrice.date.asc())
             .all()
-        
-        if not historical_prices:
+        )
+        if not rows:
             return None
-        data = []
-        # loads all info to a dataframe 
-        for price in historical_prices:
-            data.append({
-                'Date': price.date,
-                'Open': price.open,
-                'High': price.high,
-                'Low': price.low,
-                'Close': price.close,
-                'Volume': price.volume,
-                'Adj Close': price.adj_close
-            })
 
-        df = pd.DataFrame(data)
-        df['Date'] = pd.to_datetime(df['Date'])
-        df.set_index('Date', inplace=True)
+        df = pd.DataFrame([{
+            "Date": r.date,
+            "Open": r.open,
+            "High": r.high,
+            "Low":  r.low,
+            "Close": r.close,
+            "Volume": r.volume,
+        } for r in rows])
+        df["Date"] = pd.to_datetime(df["Date"])
+        df.set_index("Date", inplace=True)
 
-   
         stock = session.query(Stock).filter(Stock.symbol == symbol).first()
-
         stock_info = {
-            'symbol': symbol,
-            'shortName': stock.name if stock else symbol,
-            'sector': stock.sector if stock else 'Unknown',
-            'industry': stock.industry if stock else None,
-            'marketCap': stock.market_cap if stock else None,
-            'currentPrice': stock.current_price if stock else None,
-            'peRatio': stock.pe_ratio if stock else None,
-            'dividendYield': stock.dividend_yield if stock else None,
-            'beta': stock.beta if stock else None,
+            "symbol": symbol,
+            "shortName": stock.name if stock else symbol,
+            "sector": stock.sector if stock else "Unknown",
+            "industry": stock.industry if stock else None,
+            "marketCap": stock.market_cap if stock else None,
+            "currentPrice": stock.current_price if stock else None,
+            "peRatio": stock.pe_ratio if stock else None,
+            "dividendYield": stock.dividend_yield if stock else None,
+            "beta": stock.beta if stock else None,
         }
-
         if stock and stock.info:
             stock_info.update(stock.info)
 
-        return {
-            'historical': df,
-            'info': stock_info,
-            'last_updated': datetime.now().isoformat()
-        }
-    
+        return {"historical_json": df.to_json(orient="split"), "info": stock_info, "last_updated": datetime.now().isoformat()}
     except Exception as e:
         logger.error(f"Error loading {symbol} from database: {e}")
         return None
-    
     finally:
         session.close()
 
+
 def save_to_database(symbol, data, session_factory):
     session = session_factory()
-    from app.database.models import Stock, HistoricalPrice
     try:
         info = data.get('info', {})
         stock = session.query(Stock).filter(Stock.symbol == symbol).first()
 
-        # query from yfinance 
         stock_fields = dict(
             symbol=symbol,
             name=info.get('shortName', symbol),
-            sector=info.get('sector', None),
-            industry=info.get('industry', None),
-            market_cap=info.get('marketCap', None),
-            current_price=info.get('currentPrice', None),
-            pe_ratio=info.get('trailingPE', None),
-            dividend_yield=info.get('dividendYield', None),
-            beta=info.get('beta', None),
-            info=info
+            sector=info.get('sector'),
+            industry=info.get('industry'),
+            market_cap=info.get('marketCap'),
+            current_price=info.get('currentPrice'),
+            pe_ratio=info.get('trailingPE'),
+            dividend_yield=info.get('dividendYield'),
+            beta=info.get('beta'),
+            info=info,
         )
 
-        # if stock not exist, create the entry based on fetched from yfinance 
         if not stock:
             stock = Stock(**stock_fields)
             session.add(stock)
-
-        # if exist, update the field with fetched from yfinance  
         else:
             for k, v in stock_fields.items():
                 setattr(stock, k, v)
 
-        session.query(HistoricalPrice).filter(HistoricalPrice.symbol == symbol).delete()
+        session.flush()  # ensure parent 
 
-        historical = data.get('historical')
-        # Convert list back to DataFrame if needed
+        # Replace existing history
+        session.query(HistoricalPrice)\
+               .filter(HistoricalPrice.symbol == symbol)\
+               .delete(synchronize_session=False)
+
+        historical = data.get("historical")
         if isinstance(historical, str):
-            # Convert JSON string back to DataFrame
-            historical = pd.read_json(StringIO(historical), orient="split")
-        if historical is not None and not historical.empty:
-            # Now you can safely use DataFrame methods
-            hist_df = historical.reset_index()
-            if 'index' in hist_df.columns:
-                hist_df = hist_df.rename(columns={'index': 'Date'})
-            prices_to_add = []
-            
-            for _, row in hist_df.iterrows():
-                date_val = row['Date'].iloc[0] if isinstance(row['Date'], pd.Series) else row['Date']
-                date_obj = pd.to_datetime(date_val).date() if not isinstance(date_val, datetime) else date_val.date()
-                historical_price = HistoricalPrice(
+            historical = pd.read_json(historical, orient="split")
+        elif "historical_json" in data and isinstance(data["historical_json"], str):
+            historical = pd.read_json(data["historical_json"], orient="split")
+
+        if isinstance(historical, pd.DataFrame) and not historical.empty:
+            df = historical.copy()
+            if df.index.name is None or str(df.index.name).lower() != "date":
+                df.index.name = "Date"
+            df = df.reset_index()
+
+            to_add = []
+            for row in df.itertuples(index=False):
+                date_val = pd.to_datetime(getattr(row, "Date")).date()
+                to_add.append(HistoricalPrice(
                     symbol=symbol,
-                    date=date_obj,
-                    open=float(row['Open']) if pd.notna(row['Open']) else None,
-                    high=float(row['High']) if pd.notna(row['High']) else None,
-                    low=float(row['Low']) if pd.notna(row['Low']) else None,
-                    close=float(row['Close']) if pd.notna(row['Close']) else None,
-                    volume=int(row['Volume']) if pd.notna(row['Volume']) else None,
-                    adj_close=float(row['Adj Close']) if 'Adj Close' in row and pd.notna(row['Adj Close']) else None
-                )
-                prices_to_add.append(historical_price)
-            session.add_all(prices_to_add)
+                    date=date_val,
+                    open=float(getattr(row, "Open")) if "Open" in df.columns and pd.notna(getattr(row, "Open")) else None,
+                    high=float(getattr(row, "High")) if "High" in df.columns and pd.notna(getattr(row, "High")) else None,
+                    low=float(getattr(row, "Low")) if "Low" in df.columns and pd.notna(getattr(row, "Low")) else None,
+                    close=float(getattr(row, "Close")) if "Close" in df.columns and pd.notna(getattr(row, "Close")) else None,
+                    volume=int(getattr(row, "Volume")) if "Volume" in df.columns and pd.notna(getattr(row, "Volume")) else None,
+                ))
+
+            # Use add_all (respects ORM ordering) instead of bulk_save_objects
+            session.add_all(to_add)
+
         session.commit()
-        
-    except Exception as e:
-        logger.error(f"Error saving {symbol} to database: {e}")
+    except Exception:
         session.rollback()
+        logger.exception(f"Error saving {symbol} to database")
     finally:
         session.close()
-
-def debug_print_stock_data(symbol, session_factory):
-    session = session_factory()
-    from app.database.models import Stock, HistoricalPrice
-    try:
-        stock = session.query(Stock).filter(Stock.symbol == symbol).first()
-        if stock:
-            logger.info(f"Stock in database: {stock.symbol}, {stock.name}, {stock.sector}")
-        else:
-            logger.warning(f"No stock found for symbol {symbol}")
-        prices = session.query(HistoricalPrice).filter(HistoricalPrice.symbol == symbol).all()
-        logger.info(f"Found {len(prices)} historical prices for {symbol}")
-        if prices:
-            logger.info(f"Most recent price: {prices[-1].date} - Close: {prices[-1].close}")
-    finally:
-        session.close() 

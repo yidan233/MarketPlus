@@ -1,0 +1,147 @@
+.container {
+  min-height: 100vh;
+  background: #0f1419;
+  color: #e0e6ef;
+}
+
+.header {
+  background: #181c20;
+  border-bottom: 1px solid #333;
+  padding: 1rem 0;
+}
+
+.headerContent {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.backButton {
+  background: #2a2f36;
+  color: #e0e6ef;
+  border: 1px solid #444;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.backButton:hover {
+  background: #3a3f46;
+  border-color: #555;
+}
+
+.titleSection {
+  flex: 1;
+}
+
+.titleSection h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #e0e6ef;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0 0;
+  color: #b0b8c1;
+  font-size: 0.9rem;
+}
+
+.refreshButton {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.refreshButton:hover {
+  background: #1d4ed8;
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.tableWrapper {
+  background: #181c20;
+  border-radius: 8px;
+  border: 1px solid #333;
+  padding: 1rem;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.emptyIcon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.emptyState h3 {
+  margin: 0 0 1rem 0;
+  color: #e0e6ef;
+}
+
+.emptyState p {
+  color: #b0b8c1;
+  margin-bottom: 2rem;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #333;
+  border-top: 4px solid #60a5fa;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.error h2 {
+  color: #ef4444;
+  margin-bottom: 1rem;
+}
+
+.error p {
+  color: #b0b8c1;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .headerContent {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+} 

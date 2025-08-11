@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
+load_dotenv()
 
 STOCK_LISTS = {
     "sp500": "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
@@ -8,13 +10,25 @@ STOCK_LISTS = {
     "dow30": "https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average"
 }
 
-# database setting 
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = int(os.getenv("DB_PORT", "5432"))
-DB_NAME = os.getenv("DB_NAME", "stock_screener")
-DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "Dd123546879")
 
-# Logging configuration
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-LOG_FILE = os.getenv("LOG_FILE", "stock_screener.log")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = int(os.getenv("DB_PORT"))
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+
+
+LOG_LEVEL = os.getenv("LOG_LEVEL")
+LOG_FILE = os.getenv("LOG_FILE")
+
+
+REDIS_HOST = os.getenv("REDIS_HOST")
+REDIS_PORT = int(os.getenv("REDIS_PORT"))
+REDIS_DB = int(os.getenv("REDIS_DB"))
+
+
+# Gemini AI Configuration
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# News API Configuration
+NEWS_API_KEY = os.getenv("NEWS_API_KEY")

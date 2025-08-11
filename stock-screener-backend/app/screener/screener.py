@@ -18,8 +18,8 @@ def setup_initial_database_load(indexes=("dow30","sp500", "nasdaq100")):
     for index in indexes:
         symbols = get_stock_symbols(index=index)
         print(f"Fetching and saving data for {len(symbols)} symbols in {index}...")
-        data = fetch_yfinance_data(symbols)
-    
+        data = fetch_yfinance_data(symbols, reload=True) 
+        
         for symbol, stock_data in data.items():
             save_to_database(symbol, stock_data, SessionLocal)
     

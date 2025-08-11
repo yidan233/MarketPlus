@@ -1,0 +1,174 @@
+.newsCard {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.newsCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border-color: #007bff;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  gap: 10px;
+}
+
+.sourceInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.source {
+  font-weight: 600;
+  color: #007bff;
+  font-size: 0.9rem;
+}
+
+.date {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.sentiment {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.sentiment.bullish {
+  background: #d4edda;
+  color: #155724;
+}
+
+.sentiment.bearish {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.sentiment.neutral {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.sentimentIcon {
+  font-size: 0.9rem;
+}
+
+.sentimentText {
+  text-transform: capitalize;
+}
+
+.cardContent {
+  flex: 1;
+  margin-bottom: 15px;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.summary {
+  color: #666;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tickersSection {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.tickersLabel {
+  font-size: 0.8rem;
+  color: #666;
+  margin-right: 8px;
+}
+
+.tickersList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.ticker {
+  background: #007bff;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.moreTickers {
+  color: #666;
+  font-size: 0.7rem;
+  font-style: italic;
+}
+
+.cardFooter {
+  margin-top: auto;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.readMore {
+  color: #007bff;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.readMore:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .newsCard {
+    padding: 15px;
+  }
+  
+  .cardHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .title {
+    font-size: 1rem;
+  }
+  
+  .summary {
+    font-size: 0.85rem;
+  }
+} 

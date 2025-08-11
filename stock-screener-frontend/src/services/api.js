@@ -2,53 +2,76 @@ import axios from 'axios' // use to make http requests
 
 const API_BASE_URL = 'http://localhost:5000/api/v1'
 
+// Create axios instance for API calls
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 })
-// Screen stocks with combined criteria
+
+// Stock screening API
 export const stockApi = {
-  // Fundamental screening only 
   screenFundamental: async (data) => {
     const response = await api.post('/screen/fundamental', data)
     return response.data
   },
 
-  // Technical screening only 
   screenTechnical: async (data) => {
     const response = await api.post('/screen/technical', data)
     return response.data
   },
 
-  // Combined screening
   screenStocks: async (data) => {
     const response = await api.post('/screen/combined', data)
     return response.data
   },
 
-  // Get available indexes
   getIndexes: async () => {
     const response = await api.get('/indexes')
     return response.data
   },
 
-  // Get available indicators and fields for the criteria 
   getIndicators: async () => {
     const response = await api.get('/indicators')
     return response.data
   },
 
-  // Get stock symbols for an index
   getSymbols: async (index) => {
     const response = await api.get(`/symbols/${index}`)
     return response.data
   },
 
-  // Get detailed info for a single stock
   getStockDetail: async (symbol) => {
     const response = await api.get(`/stock/${symbol}`)
+    return response.data
+  },
+
+  getStockIndicators: async (symbol) => {
+    const response = await api.get(`/stock/${symbol}/indicators`)
+    return response.data
+  },
+
+  getPeerCompanies: async (symbol) => {
+    const response = await api.get(`/stock/${symbol}/peers`)
+    return response.data
+  },
+}
+
+// News API============================================================
+export const newsApi = {
+  getMarketNews: async (limit = 20) => {
+    const response = await api.get(`/news/market?limit=${limit}`)
+    return response.data
+  },
+
+  getTopHeadlines: async (limit = 10) => {
+    const response = await api.get(`/news/top-headlines?limit=${limit}`)
+    return response.data
+  },
+
+  getNewsHealth: async () => {
+    const response = await api.get('/news/health')
     return response.data
   },
 }
