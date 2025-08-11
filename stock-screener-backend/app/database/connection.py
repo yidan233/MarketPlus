@@ -4,7 +4,6 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
-from app.config import DATABASE_URL
 
 # only WARNING log will be printed 
 logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
@@ -12,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 # Use DATABASE_URL directly instead of parsed individual variables
 def get_database_url():
+    from app.config import DATABASE_URL
     if DATABASE_URL:
         return DATABASE_URL
     else:
@@ -22,19 +22,28 @@ def get_database_url():
         else:
             return "sqlite:///./stock_screener.db"
 
-# Configuration 
-engine = create_engine(
-    get_database_url(),
-    echo=False, # true for debugging 
-    poolclass=QueuePool,
-    pool_size=10,
-    max_overflow=20,
-    pool_pre_ping=True, 
-    pool_recycle=3600,   
-)
+# Create engine lazily - only when needed
+def get_engine():
+    return create_engine(
+        get_database_url(),
+        echo=False,
+        poolclass=QueuePool,
+        pool_size=10,
+        max_overflow=20,
+        pool_pre_ping=True, 
+        pool_recycle=3600,   
+    )
 
+# Don't create engine at import time
+engine = None
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+def get_session_maker():
+    global engine
+    if engine is None:
+        engine = get_engine()
+    return sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+SessionLocal = get_session_maker()
 
 def get_db():
     db = SessionLocal()
@@ -57,6 +66,9 @@ def get_db_session():
         db.close()
 
 def test_connection():
+    global engine
+    if engine is None:
+        engine = get_engine() # Ensure engine is created if not already
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
