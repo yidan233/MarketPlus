@@ -4,18 +4,23 @@ from contextlib import contextmanager
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
-from app.config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+from app.config import DATABASE_URL
 
 # only WARNING log will be printed 
 logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
-# check crendials 
+# Use DATABASE_URL directly instead of parsed individual variables
 def get_database_url():
-    if DB_PASSWORD:
-        return f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    if DATABASE_URL:
+        return DATABASE_URL
     else:
-        return "sqlite:///./stock_screener.db"
+        # Fallback to individual variables only if DATABASE_URL is missing
+        from app.config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+        if DB_PASSWORD:
+            return f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        else:
+            return "sqlite:///./stock_screener.db"
 
 # Configuration 
 engine = create_engine(

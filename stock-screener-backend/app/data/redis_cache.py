@@ -1,12 +1,49 @@
 import redis
-import os
 import json
 import pandas as pd
 import numpy as np
-from app.config import REDIS_HOST, REDIS_PORT, REDIS_DB
+from app.config import REDIS_URL
 
-# Connect to Redis using config from main config file
-redis_client = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
+# Connect to Redis using REDIS_URL directly instead of parsed individual variables
+def get_redis_client():
+    if REDIS_URL:
+        # Parse REDIS_URL to get connection details
+        from urllib.parse import urlparse
+        parsed = urlparse(REDIS_URL)
+        
+        # Extract Redis connection details from URL
+        host = parsed.hostname
+        port = parsed.port or 6379
+        db = int(parsed.path.lstrip('/') or 0)
+        
+        # Handle password if present
+        if parsed.password:
+            return redis.StrictRedis(
+                host=host, 
+                port=port, 
+                db=db, 
+                password=parsed.password,
+                decode_responses=True
+            )
+        else:
+            return redis.StrictRedis(
+                host=host, 
+                port=port, 
+                db=db, 
+                decode_responses=True
+            )
+    else:
+        # Fallback to individual variables only if REDIS_URL is missing
+        from app.config import REDIS_HOST, REDIS_PORT, REDIS_DB
+        return redis.StrictRedis(
+            host=REDIS_HOST, 
+            port=REDIS_PORT, 
+            db=REDIS_DB, 
+            decode_responses=True
+        )
+
+# Create Redis client
+redis_client = get_redis_client()
 
 # ex: APPL -> price:APPL
 def _price_key(symbol):
