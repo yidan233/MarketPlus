@@ -260,13 +260,185 @@ def get_stock_detail(symbol):
         live_price = get_price(symbol)
         data['live_price'] = live_price
 
-        # Convert historical DataFrame to JSON-serializable format
-        if 'historical' in data and hasattr(data['historical'], 'to_dict'):
+        # Convert historical data from JSON string to records format for charts
+        if 'historical_json' in data:
+            try:
+                import pandas as pd
+                hist_df = pd.read_json(data['historical_json'], orient="split")
+                # Convert to the format expected by frontend charts
+                data['historical'] = hist_df.reset_index().to_dict(orient='records')
+                logger.info(f"Successfully converted historical data for {symbol}, {len(data['historical'])} records")
+            except Exception as e:
+                logger.error(f"Error converting historical data for {symbol}: {e}")
+                data['historical'] = []
+        elif 'historical' in data and hasattr(data['historical'], 'to_dict'):
+            # Fallback for old format
             data['historical'] = data['historical'].reset_index().to_dict(orient='records')
 
         return jsonify(data)
     except Exception as e:
         logger.error(f"Error getting stock detail for {symbol}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/stock/<symbol>/indicators', methods=['GET'])
+def get_stock_indicators(symbol):
+    """Get technical indicators for a specific stock"""
+    try:
+        from app.indicators.indicators import TechnicalIndicators
+        import pandas as pd
+        
+        # Load stock data from database
+        data = load_from_database(symbol, SessionLocal)
+        if not data:
+            logger.error(f"Stock {symbol} not found in database")
+            return jsonify({'error': 'Stock not found'}), 404
+        
+        logger.info(f"Loaded data for {symbol}, keys: {list(data.keys())}")
+        
+        # Get historical data
+        hist_raw = data.get('historical_json')  
+        if not hist_raw:
+            logger.error(f"No historical data found for {symbol}. Available keys: {list(data.keys())}")
+            return jsonify({'error': 'No historical data available'}), 400
+        
+        # Convert to DataFrame if it's a string
+        if isinstance(hist_raw, str):
+            try:
+                hist = pd.read_json(hist_raw, orient="split")
+                logger.info(f"Successfully converted JSON to DataFrame for {symbol}, shape: {hist.shape}")
+            except Exception as e:
+                logger.error(f"Error converting JSON to DataFrame for {symbol}: {e}")
+                return jsonify({'error': 'Invalid historical data format'}), 400
+        else:
+            hist = hist_raw
+            logger.info(f"Historical data already DataFrame for {symbol}, shape: {hist.shape}")
+        
+        if hist.empty or len(hist) < 20:
+            return jsonify({'error': 'Insufficient historical data (need at least 20 data points)'}), 400
+        
+        # Initialize technical indicators calculator
+        indicators_calc = TechnicalIndicators()
+        
+        # Calculate indicators
+        close_prices = hist['Close']
+        high_prices = hist['High']
+        low_prices = hist['Low']
+        volumes = hist['Volume']
+        
+        calculated_indicators = {}
+        
+        try:
+            # Moving Average (20-day)
+            ma20 = indicators_calc.moving_average(close_prices, window=20)
+            if ma20 is not None and not ma20.empty and not pd.isna(ma20.iloc[-1]):
+                calculated_indicators['ma20'] = round(float(ma20.iloc[-1]), 2)
+            
+            # Exponential Moving Average (20-day)
+            ema20 = indicators_calc.exponential_moving_average(close_prices, span=20)
+            if ema20 is not None and not ema20.empty and not pd.isna(ema20.iloc[-1]):
+                calculated_indicators['ema20'] = round(float(ema20.iloc[-1]), 2)
+            
+            # RSI (14-day)
+            rsi = indicators_calc.relative_strength_index(close_prices, window=14)
+            if rsi is not None and not rsi.empty and not pd.isna(rsi.iloc[-1]):
+                calculated_indicators['rsi'] = round(float(rsi.iloc[-1]), 1)
+            
+            # MACD
+            macd_line, signal_line, histogram = indicators_calc.macd(close_prices)
+            if macd_line is not None and not macd_line.empty and not pd.isna(macd_line.iloc[-1]):
+                calculated_indicators['macd'] = round(float(macd_line.iloc[-1]), 2)
+            if signal_line is not None and not signal_line.empty and not pd.isna(signal_line.iloc[-1]):
+                calculated_indicators['macd_signal'] = round(float(signal_line.iloc[-1]), 2)
+            if histogram is not None and not histogram.empty and not pd.isna(histogram.iloc[-1]):
+                calculated_indicators['macd_histogram'] = round(float(histogram.iloc[-1]), 2)
+            
+            # Bollinger Bands
+            upper, middle, lower = indicators_calc.bollinger_bands(close_prices)
+            if upper is not None and not upper.empty and not pd.isna(upper.iloc[-1]):
+                calculated_indicators['bollinger_upper'] = round(float(upper.iloc[-1]), 2)
+            if middle is not None and not middle.empty and not pd.isna(middle.iloc[-1]):
+                calculated_indicators['bollinger_middle'] = round(float(middle.iloc[-1]), 2)
+            if lower is not None and not lower.empty and not pd.isna(lower.iloc[-1]):
+                calculated_indicators['bollinger_lower'] = round(float(lower.iloc[-1]), 2)
+            
+            # ATR
+            atr = indicators_calc.average_true_range(high_prices, low_prices, close_prices)
+            if atr is not None and not atr.empty and not pd.isna(atr.iloc[-1]):
+                calculated_indicators['atr'] = round(float(atr.iloc[-1]), 2)
+            
+            # Rate of Change
+            roc = indicators_calc.rate_of_change(close_prices, window=12)
+            if roc is not None and not roc.empty and not pd.isna(roc.iloc[-1]):
+                calculated_indicators['roc'] = round(float(roc.iloc[-1]), 2)
+            
+            # Current price for reference
+            current_price = float(close_prices.iloc[-1])
+            calculated_indicators['current_price'] = round(current_price, 2)
+            
+        except Exception as e:
+            logger.error(f"Error calculating indicators for {symbol}: {e}")
+            return jsonify({'error': f'Error calculating indicators: {str(e)}'}), 500
+        
+        return jsonify({
+            'symbol': symbol,
+            'indicators': calculated_indicators,
+            'data_points': len(hist),
+            'last_updated': hist.index[-1].isoformat() if hasattr(hist.index[-1], 'isoformat') else str(hist.index[-1])
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting indicators for {symbol}: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@api_bp.route('/stock/<symbol>/peers', methods=['GET'])
+def get_stock_peers(symbol):
+    """Get peer companies for comparison"""
+    try:
+        # For now, return some common peers based on sector/industry
+        # In a real implementation, you'd query a database for companies in the same sector
+        
+        # Common tech peers
+        tech_peers = ['MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA', 'TSLA', 'NFLX', 'ADBE']
+        # Common financial peers  
+        financial_peers = ['JPM', 'BAC', 'WFC', 'GS', 'MS', 'C', 'USB', 'PNC']
+        # Common healthcare peers
+        healthcare_peers = ['JNJ', 'PFE', 'UNH', 'ABBV', 'TMO', 'DHR', 'LLY', 'ABT']
+        # Common consumer peers
+        consumer_peers = ['PG', 'KO', 'PEP', 'WMT', 'HD', 'MCD', 'NKE', 'SBUX']
+        
+        # Default to tech peers for now
+        peer_symbols = tech_peers[:6]  # Limit to 6 peers
+        
+        # Get basic info for each peer
+        peers_data = []
+        for peer_symbol in peer_symbols:
+            try:
+                peer_data = load_from_database(peer_symbol, SessionLocal)
+                if peer_data and 'info' in peer_data:
+                    info = peer_data['info']
+                    peers_data.append({
+                        'symbol': peer_symbol,
+                        'name': info.get('longName', peer_symbol),
+                        'sector': info.get('sector', 'N/A'),
+                        'industry': info.get('industry', 'N/A'),
+                        'market_cap': info.get('marketCap', 0),
+                        'pe_ratio': info.get('trailingPE', 0),
+                        'price': info.get('currentPrice', 0),
+                        'change_percent': info.get('regularMarketChangePercent', 0)
+                    })
+            except Exception as e:
+                logger.warning(f"Could not load peer {peer_symbol}: {e}")
+                continue
+        
+        return jsonify({
+            'symbol': symbol,
+            'peers': peers_data,
+            'count': len(peers_data)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting peers for {symbol}: {e}")
         return jsonify({'error': str(e)}), 500
 
 # Add chatbot routes before register_routes function

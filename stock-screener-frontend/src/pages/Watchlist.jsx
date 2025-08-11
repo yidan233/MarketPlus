@@ -48,8 +48,6 @@ const Watchlist = () => {
           fundamental_criteria: watchData.criteria?.fundamental_criteria || [],
           technical_criteria: watchData.criteria?.technical_criteria || []
         },
-        emailAlerts: watchData.emailAlerts,
-        alertFrequency: watchData.alertFrequency,
         index: watchData.index,
         lastChecked: null,
         matches: [],

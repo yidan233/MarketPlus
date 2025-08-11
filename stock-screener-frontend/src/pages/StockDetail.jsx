@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { stockApi } from '../services/api'
 import PriceChart from '../components/charts/PriceChart'
+import VolumeChart from '../components/charts/VolumeChart'
+import MovingAverageChart from '../components/charts/MovingAverageChart'
 import styles from './StockDetail.module.css'
 
-const StockInfo = () => {
+const StockDetail = () => {
   const { symbol } = useParams()
   const navigate = useNavigate()
   const [data, setData] = useState(null)
@@ -12,21 +14,33 @@ const StockInfo = () => {
   const [error, setError] = useState(null)
   const [selectedChart, setSelectedChart] = useState('price')
   const [selectedCategory, setSelectedCategory] = useState(0)
-  
+  const [stockIndicators, setStockIndicators] = useState(null)
+  const [peerCompanies, setPeerCompanies] = useState(null)
+
   // New state for expandable sections
   const [expandedSections, setExpandedSections] = useState({
     priceSummary: true,
     metrics: true,
     chart: true,
-    technical: false,
+    technical: true, // Changed to true to show technical indicators by default
     peers: false,
     financials: false
   })
 
   useEffect(() => {
     setLoading(true)
-    stockApi.getStockDetail(symbol)
-      .then(setData)
+    Promise.all([
+      stockApi.getStockDetail(symbol),
+      stockApi.getStockIndicators(symbol),
+      stockApi.getPeerCompanies(symbol)
+    ])
+      .then(([stockData, indicatorsData, peersData]) => {
+        console.log('Stock data received:', stockData)
+        console.log('Historical data:', stockData?.historical)
+        setData(stockData)
+        setStockIndicators(indicatorsData)
+        setPeerCompanies(peersData)
+      })
       .catch((err) => setError(err.message || 'Error loading stock'))
       .finally(() => setLoading(false))
   }, [symbol])
@@ -162,9 +176,7 @@ const StockInfo = () => {
             )}
           </div>
           <div className={styles.headerActions}>
-            <button className={styles.watchlistButton}>
-              ⭐ Add to Watchlist
-            </button>
+            {/* Removed Add to Watchlist button */}
           </div>
         </div>
       </div>
@@ -232,15 +244,96 @@ const StockInfo = () => {
               </div>
               {expandedSections.technical && (
                 <div className={styles.technicalSection}>
-                  <div className={styles.placeholderContent}>
-                    <p>Technical indicators coming soon:</p>
-                    <ul>
-                      <li>RSI (Relative Strength Index)</li>
-                      <li>MACD (Moving Average Convergence Divergence)</li>
-                      <li>Bollinger Bands</li>
-                      <li>Support/Resistance Levels</li>
-                    </ul>
-                  </div>
+                  {stockIndicators ? (
+                    <div className={styles.indicatorsContent}>
+                      <div className={styles.indicatorsGrid}>
+                        <div className={styles.indicatorCategory}>
+                          <h4>📊 Moving Averages</h4>
+                          <div className={styles.indicatorList}>
+                            {stockIndicators.indicators.ma20 && (
+                              <span className={styles.indicatorTag}>
+                                MA(20): ${stockIndicators.indicators.ma20}
+                              </span>
+                            )}
+                            {stockIndicators.indicators.ema20 && (
+                              <span className={styles.indicatorTag}>
+                                EMA(20): ${stockIndicators.indicators.ema20}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className={styles.indicatorCategory}>
+                          <h4>📈 Momentum Indicators</h4>
+                          <div className={styles.indicatorList}>
+                            {stockIndicators.indicators.rsi && (
+                              <span className={styles.indicatorTag}>
+                                RSI(14): {stockIndicators.indicators.rsi}
+                              </span>
+                            )}
+                            {stockIndicators.indicators.roc && (
+                              <span className={styles.indicatorTag}>
+                                ROC(12): {stockIndicators.indicators.roc}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.indicatorsGrid}>
+                        <div className={styles.indicatorCategory}>
+                          <h4>🎯 MACD</h4>
+                          <div className={`${styles.indicatorList} ${styles.macdIndicators}`}>
+                            {stockIndicators.indicators.macd && (
+                              <span className={styles.indicatorTag}>
+                                MACD: {stockIndicators.indicators.macd}
+                              </span>
+                            )}
+                            {stockIndicators.indicators.macd_signal && (
+                              <span className={styles.indicatorTag}>
+                                Signal: {stockIndicators.indicators.macd_signal}
+                              </span>
+                            )}
+                            {stockIndicators.indicators.macd_histogram && (
+                              <span className={styles.indicatorTag}>
+                                Histogram: {stockIndicators.indicators.macd_histogram}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className={styles.indicatorCategory}>
+                          <h4>📊 Volatility & Bands</h4>
+                          <div className={styles.indicatorList}>
+                            {stockIndicators.indicators.bollinger_upper && (
+                              <span className={styles.indicatorTag}>
+                                BB Upper: ${stockIndicators.indicators.bollinger_upper}
+                              </span>
+                            )}
+                            {stockIndicators.indicators.bollinger_middle && (
+                              <span className={styles.indicatorTag}>
+                                BB Middle: ${stockIndicators.indicators.bollinger_middle}
+                              </span>
+                            )}
+                            {stockIndicators.indicators.bollinger_lower && (
+                              <span className={styles.indicatorTag}>
+                                BB Lower: ${stockIndicators.indicators.bollinger_lower}
+                              </span>
+                            )}
+                            {stockIndicators.indicators.atr && (
+                              <span className={styles.indicatorTag}>
+                                ATR(14): ${stockIndicators.indicators.atr}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={styles.loadingIndicators}>
+                      <p>Loading technical indicators...</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -303,20 +396,22 @@ const StockInfo = () => {
                       className={styles.chartSelect}
                     >
                       <option value="price">Price History</option>
-                      <option value="volume">Volume</option>
-                      <option value="ma">Moving Average</option>
+                      <option value="volume">Trading Volume</option>
+                      <option value="ma">Moving Averages</option>
                     </select>
                   </div>
                   <div className={styles.chartContainer}>
-                    {selectedChart === 'price' && <PriceChart data={data.historical} />}
-                    {selectedChart === 'volume' && (
+                    {data?.historical ? (
+                      <>
+                        {selectedChart === 'price' && <PriceChart data={data.historical} />}
+                        {selectedChart === 'volume' && <VolumeChart data={data.historical} />}
+                        {selectedChart === 'ma' && <MovingAverageChart data={data.historical} />}
+                      </>
+                    ) : (
                       <div className={styles.placeholderChart}>
-                        <strong>Volume Chart (Coming Soon)</strong>
-                      </div>
-                    )}
-                    {selectedChart === 'ma' && (
-                      <div className={styles.placeholderChart}>
-                        <strong>Moving Average Chart (Coming Soon)</strong>
+                        <p>Loading chart data...</p>
+                        <p>Data available: {data ? 'Yes' : 'No'}</p>
+                        <p>Historical data: {data?.historical ? `${data.historical.length} records` : 'None'}</p>
                       </div>
                     )}
                   </div>
@@ -332,15 +427,43 @@ const StockInfo = () => {
               </div>
               {expandedSections.peers && (
                 <div className={styles.peersSection}>
-                  <div className={styles.placeholderContent}>
-                    <p>Peer comparison coming soon:</p>
-                    <ul>
-                      <li>Compare with similar companies</li>
-                      <li>Market cap comparison</li>
-                      <li>P/E ratio comparison</li>
-                      <li>Performance vs peers</li>
-                    </ul>
-                  </div>
+                  {peerCompanies ? (
+                    <div className={styles.peersContent}>
+                      <h3>Peer Companies for {info.shortName} ({info.symbol})</h3>
+                      <table className={styles.peersTable}>
+                        <thead>
+                          <tr>
+                            <th>Company</th>
+                            <th>Symbol</th>
+                            <th>Sector</th>
+                            <th>Market Cap</th>
+                            <th>P/E Ratio</th>
+                            <th>Price</th>
+                            <th>Change %</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {peerCompanies.peers.map(peer => (
+                            <tr key={peer.symbol}>
+                              <td>{peer.name}</td>
+                              <td>{peer.symbol}</td>
+                              <td>{peer.sector}</td>
+                              <td>{formatValue(peer.market_cap, 'marketCap')}</td>
+                              <td>{peer.pe_ratio ? peer.pe_ratio.toFixed(2) : 'N/A'}</td>
+                              <td>${peer.price?.toFixed(2) || 'N/A'}</td>
+                              <td className={peer.change_percent >= 0 ? styles.positiveChange : styles.negativeChange}>
+                                {peer.change_percent ? `${peer.change_percent.toFixed(2)}%` : 'N/A'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className={styles.placeholderContent}>
+                      <p>Loading peer companies...</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -351,4 +474,4 @@ const StockInfo = () => {
   )
 }
 
-export default StockInfo
+export default StockDetail

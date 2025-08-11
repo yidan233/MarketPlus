@@ -44,11 +44,10 @@ const StockSearch = () => {
   // Category-based exploration
   const stockCategories = [
     { name: 'Tech Titans', icon: '🚀', symbols: ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NVDA'] },
-    { name: 'Clean Energy', icon: '🌱', symbols: ['TSLA', 'NIO', 'PLUG', 'ENPH', 'RUN', 'SEDG'] },
-    { name: 'Banking Giants', icon: '🏦', symbols: ['JPM', 'BAC', 'WFC', 'GS', 'MS', 'C'] },
+    { name: 'Banking Giants', icon: '🏦', symbols: ['JPM', 'BAC', 'WFC', 'MS', 'C'] },
     { name: 'Healthcare', icon: '⚕️', symbols: ['JNJ', 'PFE', 'UNH', 'ABBV', 'TMO', 'DHR'] },
     { name: 'Consumer Goods', icon: '🛍️', symbols: ['PG', 'KO', 'PEP', 'WMT', 'HD', 'MCD'] },
-    { name: 'Entertainment', icon: '🎬', symbols: ['NFLX', 'DIS', 'SPOT', 'ROKU', 'CMCSA', 'VIAC'] }
+    { name: 'Entertainment', icon: '🎬', symbols: ['NFLX', 'DIS', 'ROKU', 'CMCSA'] }
   ]
 
   // Load recent searches from localStorage
@@ -184,8 +183,6 @@ const StockSearch = () => {
     { symbol: 'AMZN', name: 'Amazon.com Inc.' },
     { symbol: 'TSLA', name: 'Tesla Inc.' },
     { symbol: 'META', name: 'Meta Platforms Inc.' },
-    { symbol: 'NVDA', name: 'NVIDIA Corp.' },
-    { symbol: 'NFLX', name: 'Netflix Inc.' }
   ]
 
   const getRandomMessage = () => {

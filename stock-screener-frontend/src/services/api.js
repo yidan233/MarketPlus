@@ -46,6 +46,16 @@ export const stockApi = {
     const response = await api.get(`/stock/${symbol}`)
     return response.data
   },
+
+  getStockIndicators: async (symbol) => {
+    const response = await api.get(`/stock/${symbol}/indicators`)
+    return response.data
+  },
+
+  getPeerCompanies: async (symbol) => {
+    const response = await api.get(`/stock/${symbol}/peers`)
+    return response.data
+  },
 }
 
 // News API============================================================

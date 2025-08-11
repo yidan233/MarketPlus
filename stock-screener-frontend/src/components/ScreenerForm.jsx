@@ -4,12 +4,10 @@ import CriteriaBuilder from './CriteriaBuilder'
 import styles from './ScreenerForm.module.css'
 
 
-// this component is the form for the stock screener 
-// user can select the index, limit, and criteria 
 const ScreenerForm = ({ onResults }) => {
   const [formData, setFormData] = useState({
     index: 'sp500',
-    limit: 1000, // Set high limit to get all results
+    limit: 1000, 
     fundamental_criteria: '',
     technical_criteria: '',
     reload: false,

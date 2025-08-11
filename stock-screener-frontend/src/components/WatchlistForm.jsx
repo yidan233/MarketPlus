@@ -7,9 +7,7 @@ const WatchlistForm = ({ onSubmit, loading }) => {
     name: '',
     index: 'sp500',
     fundamental_criteria: [{ field: '', operator: '', value: '' }],
-    technical_criteria: [{ field: '', operator: '', value: '' }],
-    emailAlerts: false, // ← CHANGED: Default to false
-    alertFrequency: 'daily' // 'immediate', 'daily', 'weekly'
+    technical_criteria: [{ field: '', operator: '', value: '' }]
   })
   
   const [availableFields, setAvailableFields] = useState({
@@ -57,9 +55,7 @@ const WatchlistForm = ({ onSubmit, loading }) => {
       criteria: {  // ← Make sure this structure is correct
         fundamental_criteria: formData.fundamental_criteria.filter(c => c.field && c.operator && c.value),
         technical_criteria: formData.technical_criteria.filter(c => c.field && c.operator && c.value)
-      },
-      emailAlerts: formData.emailAlerts,
-      alertFrequency: formData.alertFrequency
+      }
     }
 
     await onSubmit(watchData)
@@ -228,48 +224,6 @@ const WatchlistForm = ({ onSubmit, loading }) => {
           >
             + Add Technical Criterion
           </button>
-        </div>
-
-        {/* Email Alerts */}
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Email Alerts</h3>
-          <div className={styles.alertSettings}>
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={formData.emailAlerts}
-                onChange={(e) => setFormData(prev => ({ ...prev, emailAlerts: e.target.checked }))}
-                className={styles.checkbox}
-              />
-              <span className={styles.checkboxText}>
-                Send email alerts when stocks match criteria
-              </span>
-            </label>
-            
-            {formData.emailAlerts && (
-              <>
-                <div className={styles.alertInfo}>
-                  <p className={styles.alertDescription}>
-                    📧 You'll receive email notifications when stocks match your criteria.
-                  </p>
-                </div>
-                
-                <div className={styles.inputGroup}>
-                  <label htmlFor="frequency">Alert Frequency</label>
-                  <select
-                    id="frequency"
-                    value={formData.alertFrequency}
-                    onChange={(e) => setFormData(prev => ({ ...prev, alertFrequency: e.target.value }))}
-                    className={styles.select}
-                  >
-                    <option value="immediate">Immediate - Get notified as soon as stocks match</option>
-                    <option value="daily">Daily Summary - Get one email per day with all matches</option>
-                    <option value="weekly">Weekly Summary - Get one email per week with all matches</option>
-                  </select>
-                </div>
-              </>
-            )}
-          </div>
         </div>
 
         {/* Submit Button */}

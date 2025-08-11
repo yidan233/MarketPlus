@@ -11,6 +11,7 @@ import News from './pages/News'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Watchlist from './pages/Watchlist'
+import WatchlistMatches from './pages/WatchlistMatches'
 import './App.css'
 import indexedDBService from './services/indexedDB'
 
@@ -51,6 +52,14 @@ function App() {
               element={
                 <ProtectedRoute message="Please sign in to access your watchlist">
                   <Watchlist />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/watchlist/matches/:watchId" 
+              element={
+                <ProtectedRoute message="Please sign in to access your watchlist matches">
+                  <WatchlistMatches />
                 </ProtectedRoute>
               } 
             />

@@ -18,9 +18,8 @@ def setup_initial_database_load(indexes=("dow30","sp500", "nasdaq100")):
     for index in indexes:
         symbols = get_stock_symbols(index=index)
         print(f"Fetching and saving data for {len(symbols)} symbols in {index}...")
-        # Add reload=True to force fresh data fetch with improved logic
-        data = fetch_yfinance_data(symbols) # DELETE THIS
-    
+        data = fetch_yfinance_data(symbols, reload=True) 
+        
         for symbol, stock_data in data.items():
             save_to_database(symbol, stock_data, SessionLocal)
     
@@ -38,7 +37,7 @@ class StockScreener:
         '!=': operator.ne
     }
     
-    def __init__(self, auto_setup_db=True):
+    def __init__(self, auto_setup_db=False):
         self.indicators = TechnicalIndicators()
         self.stock_data = {} # will hold all loaded stock data for display 
         if auto_setup_db:

@@ -188,8 +188,7 @@ const FloatingChatbot = () => {
                 onClick={clearChat}
                 title="Clear chat"
               >
-                🗑️
-              </button>
+                🗑️ clear history              </button>
               <button 
                 className={styles.closeButton}
                 onClick={toggleChat}

@@ -4,6 +4,7 @@ import operator
 import pandas as pd
 import numpy as np
 from app.data.redis_cache import get_price
+from io import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +17,25 @@ OPERATORS = {
     '!=': operator.ne
 }
 
+def _as_dataframe(x):
+    # Already a DataFrame
+    if isinstance(x, pd.DataFrame):
+        return x
+    # JSON string produced by DataFrame.to_json(orient="split")
+    if isinstance(x, str):
+        try:
+            return pd.read_json(StringIO(x), orient="split")
+        except Exception:
+            return None
+    # Dict/list fallback
+    if isinstance(x, dict) or isinstance(x, list):
+        try:
+            return pd.DataFrame(x)
+        except Exception:
+            return None
+    return None
+
+
 def screen_by_technical(stock_data: Dict[str, Any], indicators, criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
     if not stock_data:
         raise ValueError("No stock data loaded. Call load_data first.")
@@ -23,10 +43,13 @@ def screen_by_technical(stock_data: Dict[str, Any], indicators, criteria: Dict[s
     results = []
 
     for symbol, data in stock_data.items():
-        if 'historical' not in data or data['historical'].empty:
+        hist_raw = data.get('historical')
+        hist = _as_dataframe(hist_raw)
+
+        if hist is None or hist.empty:
+            logger.warning(f"No usable historical data for {symbol} (type={type(hist_raw).__name__})")
             continue
 
-        hist = data['historical']
         meets_criteria = True
 
         for indicator, condition in criteria.items():

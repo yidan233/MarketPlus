@@ -1,54 +1,124 @@
 import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { watchlistAPI } from '../services/watchlistAPI'
+import indexedDBService from '../services/indexedDB'
+import { stockApi } from '../services/api'
 import StockTable from '../components/StockTable'
 import styles from './WatchlistMatches.module.css'
 
 const WatchlistMatches = () => {
-  const { watchlistId } = useParams()
+  const { watchId } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
   
-  const [watchlist, setWatchlist] = useState(null)
+  const [watch, setWatch] = useState(null)
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    loadWatchlistMatches()
-  }, [watchlistId])
+    loadWatchMatches()
+  }, [watchId])
 
-  const loadWatchlistMatches = async () => {
+  const loadWatchMatches = async () => {
     try {
       setLoading(true)
-      const watchlists = await watchlistAPI.getUserWatchlists(user.username)
-      const currentWatchlist = watchlists.find(w => w.id === parseInt(watchlistId))
+      const userWatches = await indexedDBService.getUserWatchlists(user.id)
+      const currentWatch = userWatches.find(w => w.id === parseInt(watchId))
       
-      if (!currentWatchlist) {
-        setError('Watchlist not found')
+      if (!currentWatch) {
+        setError('Watch not found')
         return
       }
       
-      setWatchlist(currentWatchlist)
+      setWatch(currentWatch)
       
-      // Convert matches to stock format for StockTable
-      const stockData = (currentWatchlist.matches || []).map(match => ({
-        symbol: match.symbol,
-        price: match.price,
-        market_cap: match.market_cap,
-        pe_ratio: match.pe_ratio,
-        sector: match.sector,
-        name: match.name,
-        dividend_yield: match.dividend_yield,
-        beta: match.beta,
-        industry: match.industry
-      }))
-      
-      setMatches(stockData)
+      // Run screening to find matches based on watch criteria
+      if (currentWatch.criteria && (currentWatch.criteria.fundamental_criteria?.length > 0 || currentWatch.criteria.technical_criteria?.length > 0)) {
+        try {
+          // Convert array criteria to string format for backend
+          const convertCriteriaToString = (criteriaArray) => {
+            if (!Array.isArray(criteriaArray) || criteriaArray.length === 0) return '';
+            return criteriaArray
+              .filter(c => c.field && c.operator && c.value)
+              .map(c => `${c.field}${c.operator}${c.value}`)
+              .join(',');
+          };
+
+          const fundamentalCriteriaStr = convertCriteriaToString(currentWatch.criteria.fundamental_criteria);
+          const technicalCriteriaStr = convertCriteriaToString(currentWatch.criteria.technical_criteria);
+          
+          console.log('Converted criteria strings:');
+          console.log('Fundamental:', fundamentalCriteriaStr);
+          console.log('Technical:', technicalCriteriaStr);
+          
+          let screeningResult;
+          
+          // Use appropriate screening endpoint based on available criteria
+          if (fundamentalCriteriaStr && technicalCriteriaStr) {
+            // Both criteria exist - use combined screening
+            const screeningData = {
+              index: currentWatch.index || 'sp500',
+              fundamental_criteria: fundamentalCriteriaStr,
+              technical_criteria: technicalCriteriaStr,
+              limit: 600,
+              reload: false,
+              period: '1y',
+              interval: '1d'
+            };
+            
+            console.log('Running combined screening with data:', screeningData);
+            screeningResult = await stockApi.screenStocks(screeningData);
+            
+          } else if (fundamentalCriteriaStr) {
+            // Only fundamental criteria - use fundamental screening
+            const screeningData = {
+              index: currentWatch.index || 'sp500',
+              criteria: fundamentalCriteriaStr,
+              limit: 100,
+              reload: false,
+              period: '1y',
+              interval: '1d'
+            };
+            
+            console.log('Running fundamental screening with data:', screeningData);
+            screeningResult = await stockApi.screenFundamental(screeningData);
+            
+          } else if (technicalCriteriaStr) {
+            // Only technical criteria - use technical screening
+            const screeningData = {
+              index: currentWatch.index || 'sp500',
+              criteria: technicalCriteriaStr,
+              limit: 100,
+              reload: false,
+              period: '1y',
+              interval: '1d'
+            };
+            
+            console.log('Running technical screening with data:', screeningData);
+            screeningResult = await stockApi.screenTechnical(screeningData);
+          }
+          
+          console.log('Screening result:', screeningResult);
+          
+          if (screeningResult && screeningResult.stocks) {
+            console.log('Found stocks:', screeningResult.stocks.length);
+            setMatches(screeningResult.stocks);
+          } else {
+            console.log('No stocks in result or result is empty');
+            setMatches([]);
+          }
+        } catch (screeningError) {
+          console.error('Error running screening:', screeningError);
+          setMatches([]);
+        }
+      } else {
+        console.log('No criteria found in watch:', currentWatch.criteria);
+        setMatches([]);
+      }
       
     } catch (err) {
-      setError('Failed to load watchlist matches')
+      setError('Failed to load watch matches')
       console.error('Error loading matches:', err)
     } finally {
       setLoading(false)
@@ -60,7 +130,7 @@ const WatchlistMatches = () => {
   }
 
   const handleRefresh = () => {
-    loadWatchlistMatches()
+    loadWatchMatches()
   }
 
   if (loading) {
@@ -96,7 +166,7 @@ const WatchlistMatches = () => {
             ← Back to Watchlists
           </button>
           <div className={styles.titleSection}>
-            <h1>{watchlist?.name} - Matches</h1>
+            <h1>{watch?.name} - Matches</h1>
             <p className={styles.subtitle}>
               {matches.length} stocks currently match your criteria
             </p>

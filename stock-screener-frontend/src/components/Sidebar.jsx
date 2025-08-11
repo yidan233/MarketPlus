@@ -139,11 +139,6 @@ const Sidebar = ({ isOpen, onClose }) => {
                 Portfolio
                 <span className={styles["coming-soon"]}>Coming Soon</span>
               </button>
-              <button className={`${styles["nav-item"]} ${styles.disabled}`}>
-                <span className={styles["nav-icon"]}>⚙️</span>
-                Settings
-                <span className={styles["coming-soon"]}>Coming Soon</span>
-              </button>
             </nav>
           </div>
         </div>

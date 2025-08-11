@@ -40,7 +40,7 @@ const WatchlistTable = ({ watches, onDelete, onToggle, loading, onSwitchToForm }
       .map(c => `${c.field}${c.operator}${c.value}`)
       .join(',')
     
-    navigate(`/?f=${encodeURIComponent(JSON.stringify(watch.criteria))}`)
+    navigate(`/watchlist/matches/${watch.id}`)
   }
 
   if (loading) {
@@ -83,13 +83,6 @@ const WatchlistTable = ({ watches, onDelete, onToggle, loading, onSwitchToForm }
                 <span className={styles.watchIndex}>{watch.index?.toUpperCase() || 'N/A'}</span>
               </div>
               <div className={styles.watchActions}>
-                <button
-                  onClick={() => onToggle(watch.id)}
-                  className={`${styles.toggleButton} ${watch.isActive ? styles.active : styles.inactive}`}
-                  title={watch.isActive ? 'Pause watch' : 'Activate watch'}
-                >
-                  {watch.isActive ? '⏸️' : '▶️'}
-                </button>
                 <button
                   onClick={() => onDelete(watch.id)}
                   className={styles.deleteButton}

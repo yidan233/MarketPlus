@@ -3,7 +3,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# default to be sp500
+# default to be sp500, get a list ofstock symbpl 
 def get_stock_symbols(index="sp500"):
     try:
         if index == "sp500":

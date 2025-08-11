@@ -7,7 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-REFRESH_INTERVAL = 60
+REFRESH_INTERVAL = 300
 
 def get_all_symbols(): # get all symbol from database 
     session = SessionLocal()
