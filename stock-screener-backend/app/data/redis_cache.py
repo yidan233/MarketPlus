@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from app.config import REDIS_URL
 
-# Connect to Redis using REDIS_URL directly instead of parsed individual variables
+# FIX: Don't create redis_client at import time
 def get_redis_client():
     if REDIS_URL:
         # Parse REDIS_URL to get connection details
@@ -42,8 +42,14 @@ def get_redis_client():
             decode_responses=True
         )
 
-# Create Redis client
-redis_client = get_redis_client()
+# Don't create client at import time
+redis_client = None
+
+def _get_redis_client():
+    global redis_client
+    if redis_client is None:
+        redis_client = get_redis_client()
+    return redis_client
 
 # ex: APPL -> price:APPL
 def _price_key(symbol):
@@ -51,7 +57,8 @@ def _price_key(symbol):
 
 # Get price from Redis cache
 def get_price(symbol):
-    price = redis_client.get(_price_key(symbol))
+    client = _get_redis_client()
+    price = client.get(_price_key(symbol))
     if price is not None:
         try:
             return float(price)
@@ -61,7 +68,8 @@ def get_price(symbol):
 
 # time to live 
 def set_price(symbol, price):
-    redis_client.set(_price_key(symbol), price) 
+    client = _get_redis_client()
+    client.set(_price_key(symbol), price) 
 
 def _stock_data_key(symbol):
     return f"stockdata:{symbol.upper()}"
@@ -90,10 +98,12 @@ def make_json_serializable(obj):
 
 def set_stock_data(symbol, data, ttl=172800):  # 2 days
     serializable_data = make_json_serializable(data)
-    redis_client.setex(_stock_data_key(symbol), ttl, json.dumps(serializable_data))
+    client = _get_redis_client()  
+    client.setex(_stock_data_key(symbol), ttl, json.dumps(serializable_data))
 
 def get_stock_data(symbol):
-    value = redis_client.get(_stock_data_key(symbol))
+    client = _get_redis_client()  
+    value = client.get(_stock_data_key(symbol))
     if value is not None:
         try:
             return json.loads(value)

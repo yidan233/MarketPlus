@@ -4,14 +4,14 @@ import hashlib
 import logging
 from datetime import datetime, timedelta
 from sqlalchemy import text
-from .connection import engine, get_db_session
+from .connection import get_engine, get_db_session
 from .models import Base, Stock, HistoricalPrice, ScreeningResult
 
 logger = logging.getLogger(__name__)
 def reset_database():
     try:
-        Base.metadata.drop_all(engine)
-        Base.metadata.create_all(engine)
+        Base.metadata.drop_all(bind=get_engine())
+        Base.metadata.create_all(bind=get_engine())
         logger.info("✅ Database reset successfully!")
         return True
     except Exception as e:
@@ -148,11 +148,11 @@ def get_database_stats():
 
 def optimize_database():
     try:
-        with engine.connect() as conn:
-            if 'postgresql' in str(engine.url):
+        with get_engine().connect() as conn:
+            if 'postgresql' in str(get_engine().url):
                 conn.execute(text("VACUUM ANALYZE;")) # clean up deleted data and update stats
                 conn.execute(text("REINDEX DATABASE stock_screener;")) # rebuild the idx 
-            elif 'sqlite' in str(engine.url):
+            elif 'sqlite' in str(get_engine().url):
                 conn.execute(text("VACUUM;"))
                 conn.execute(text("ANALYZE;"))
             

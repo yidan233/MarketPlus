@@ -1,6 +1,6 @@
 
 
-from .connection import get_db, get_db_session, engine, SessionLocal, test_connection
+from .connection import get_db, get_db_session, get_engine, test_connection
 from .models import Base, Stock, HistoricalPrice, ScreeningResult
 from .setup import setup_database, validate_database
 from .utils import (
@@ -11,14 +11,12 @@ from .utils import (
     get_database_stats,
     optimize_database
 )
-
-
+   
 __all__ = [
     # Connection
     'get_db',
     'get_db_session',
-    'engine',
-    'SessionLocal',
+    'get_engine',
     'test_connection',
 
     # Models

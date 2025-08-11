@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy import text
-from .connection import engine, test_connection
+from .connection import get_engine, test_connection
 from .models import Base, create_tables
 
 logger = logging.getLogger(__name__)
@@ -10,6 +10,7 @@ def setup_database():
         if not test_connection():
             raise Exception("Database connection failed")
         
+        engine = get_engine()
         create_tables(engine)
         logger.info("✅ Database tables created successfully!")
         
@@ -24,6 +25,8 @@ def setup_database():
 
 def create_indexes():
     try:
+        from .connection import get_engine
+        engine = get_engine()
         with engine.connect() as conn:
            # find prices by date quickly 
             conn.execute(text("""
@@ -78,7 +81,9 @@ def validate_database():
     try:
         if not test_connection():
             return False, "Database connection failed"
-       
+
+        from .connection import get_engine
+        engine = get_engine()
         with engine.connect() as conn:
             result = conn.execute(text("""
                 SELECT COUNT(*) FROM information_schema.tables 

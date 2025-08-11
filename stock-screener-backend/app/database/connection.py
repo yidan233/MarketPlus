@@ -34,7 +34,7 @@ def get_engine():
         pool_recycle=3600,   
     )
 
-# Don't create engine at import time
+
 engine = None
 
 def get_session_maker():
@@ -43,9 +43,13 @@ def get_session_maker():
         engine = get_engine()
     return sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-SessionLocal = get_session_maker()
+
+SessionLocal = None
 
 def get_db():
+    global SessionLocal
+    if SessionLocal is None:
+        SessionLocal = get_session_maker()
     db = SessionLocal()
     try:
         yield db
@@ -54,6 +58,9 @@ def get_db():
 
 @contextmanager
 def get_db_session():
+    global SessionLocal
+    if SessionLocal is None:
+        SessionLocal = get_session_maker()
     db = SessionLocal()
     try:
         yield db

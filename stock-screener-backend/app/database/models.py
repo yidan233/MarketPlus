@@ -193,20 +193,11 @@ class NewsArticle(Base):
         }
 
 
-def create_tables(engine=None):
-    if engine is None:
-        from .connection import engine
-    
-    # Drop old watchlist_matches table if it exists
-    try:
-        Base.metadata.drop_all(engine, tables=[WatchlistMatch.__table__])
-        print("Dropped old watchlist_matches table")
-    except:
-        pass
-    
-    # Create new tables
-    Base.metadata.create_all(engine)
-    print("✅ Database tables created successfully!")
+def create_tables(engine):
+    Base.metadata.create_all(bind=engine)
+
+def drop_tables(engine):
+    Base.metadata.drop_all(bind=engine)
 
 if __name__ == "__main__":
     # Only import engine when running directly
