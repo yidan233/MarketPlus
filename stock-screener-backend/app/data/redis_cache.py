@@ -3,11 +3,9 @@ import os
 import json
 import pandas as pd
 import numpy as np
+from app.config import REDIS_HOST, REDIS_PORT, REDIS_DB
 
-# Connect to Redis (default: localhost:6379)
-REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
-REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
-REDIS_DB = int(os.getenv('REDIS_DB', 0))
+# Connect to Redis using config from main config file
 redis_client = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
 
 # ex: APPL -> price:APPL

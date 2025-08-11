@@ -50,3 +50,6 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # News API Configuration
 NEWS_API_KEY = os.getenv("NEWS_API_KEY")
+
+# Frontend URL for CORS
+FRONTEND_URL = os.getenv("FRONTEND_URL")
